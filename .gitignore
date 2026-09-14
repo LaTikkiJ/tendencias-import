@@ -1,0 +1,18 @@
+# dependencias
+node_modules/
+
+# next
+.next/
+out/
+
+# variables privadas/locales
+.env
+.env.local
+.env.*.local
+
+# vercel
+.vercel/
+
+# sistema
+.DS_Store
+Thumbs.db
