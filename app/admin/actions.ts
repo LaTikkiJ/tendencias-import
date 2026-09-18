@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function logout() {
   const supabase = await createClient();
+
   await supabase.auth.signOut();
+
   redirect("/login-admin");
 }
 
@@ -28,17 +30,35 @@ function csvNumbers(value: FormDataEntryValue | null) {
 // PACAS
 // ============================================================
 
-export async function createPacaCategory(formData: FormData) {
+export async function createPacaCategory(
+  formData: FormData
+) {
   const supabase = await createClient();
 
-  const audience = String(formData.get("audience") ?? "kids");
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const sizeRanges = csvText(formData.get("size_ranges"));
-  const boxQuantities = csvNumbers(formData.get("box_quantities"));
+  const audience = String(
+    formData.get("audience") ?? "kids"
+  );
+
+  const name = String(
+    formData.get("name") ?? ""
+  ).trim();
+
+  const description = String(
+    formData.get("description") ?? ""
+  ).trim();
+
+  const sizeRanges = csvText(
+    formData.get("size_ranges")
+  );
+
+  const boxQuantities = csvNumbers(
+    formData.get("box_quantities")
+  );
 
   if (!name) {
-    throw new Error("Debes ingresar el nombre de la categoría.");
+    throw new Error(
+      "Debes ingresar el nombre de la categoría."
+    );
   }
 
   const slugBase = name
@@ -65,31 +85,57 @@ export async function createPacaCategory(formData: FormData) {
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/pacas");
   revalidatePath("/admin/pacas");
+
   redirect(`/admin/pacas/${data.id}`);
 }
 
-export async function updatePacaCategory(formData: FormData) {
+export async function updatePacaCategory(
+  formData: FormData
+) {
   const supabase = await createClient();
-  const id = String(formData.get("id"));
+
+  const id = String(
+    formData.get("id")
+  );
 
   const { error } = await supabase
     .from("paca_categories")
     .update({
-      audience: String(formData.get("audience")),
-      name: String(formData.get("name") ?? "").trim(),
-      description: String(formData.get("description") ?? "").trim(),
-      size_ranges: csvText(formData.get("size_ranges")),
-      box_quantities: csvNumbers(formData.get("box_quantities")),
-      active: formData.get("active") === "on",
+      audience: String(
+        formData.get("audience")
+      ),
+
+      name: String(
+        formData.get("name") ?? ""
+      ).trim(),
+
+      description: String(
+        formData.get("description") ?? ""
+      ).trim(),
+
+      size_ranges: csvText(
+        formData.get("size_ranges")
+      ),
+
+      box_quantities: csvNumbers(
+        formData.get("box_quantities")
+      ),
+
+      active:
+        formData.get("active") === "on",
     })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/pacas");
@@ -97,175 +143,211 @@ export async function updatePacaCategory(formData: FormData) {
   revalidatePath(`/admin/pacas/${id}`);
 }
 
-export async function setPacaCover(formData: FormData) {
+export async function setPacaCover(
+  formData: FormData
+) {
   const supabase = await createClient();
-  const id = String(formData.get("id"));
-  const url = String(formData.get("url"));
+
+  const id = String(
+    formData.get("id")
+  );
+
+  const url = String(
+    formData.get("url")
+  );
 
   const { error } = await supabase
     .from("paca_categories")
-    .update({ cover_url: url })
+    .update({
+      cover_url: url,
+    })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/pacas");
   revalidatePath(`/admin/pacas/${id}`);
 }
 
+
 // ============================================================
-// SERIES - MODELOS
+// SERIES
+// NUEVOS CÓDIGOS YA NO SE CREAN AQUÍ.
+// NACEN DESDE UNA COMPRA CHINA.
 // ============================================================
 
-export async function createSeriesProduct(formData: FormData) {
+export async function updateSeriesProduct(
+  formData: FormData
+) {
   const supabase = await createClient();
 
-  const name = String(formData.get("name") ?? "").trim();
-  const sizes = csvText(formData.get("sizes"));
-  const pricePreorder = Number(formData.get("price_preorder") ?? 0);
-  const priceStock = Number(formData.get("price_stock") ?? 0);
+  const id = String(
+    formData.get("id")
+  );
 
-  if (!name) throw new Error("Debes ingresar el nombre del conjunto.");
-  if (!sizes.length) throw new Error("Debes ingresar al menos una talla.");
+  const name = String(
+    formData.get("name") ?? ""
+  ).trim();
 
-  if (!Number.isFinite(pricePreorder) || pricePreorder <= 0) {
-    throw new Error("Debes ingresar un precio de preventa válido.");
+  const pricePreorder = Number(
+    formData.get("price_preorder") ?? 0
+  );
+
+  const priceStock = Number(
+    formData.get("price_stock") ?? 0
+  );
+
+  const preorderMarkup = Number(
+    formData.get(
+      "preorder_markup_pct"
+    ) ?? 30
+  );
+
+  const stockMarkup = Number(
+    formData.get(
+      "stock_markup_pct"
+    ) ?? 40
+  );
+
+  const description = String(
+    formData.get("description") ?? ""
+  );
+
+  if (
+    !Number.isFinite(pricePreorder) ||
+    pricePreorder <= 0
+  ) {
+    throw new Error(
+      "Ingresa un precio de preventa válido."
+    );
   }
 
-  if (!Number.isFinite(priceStock) || priceStock <= 0) {
-    throw new Error("Debes ingresar un precio de stock válido.");
+  if (
+    !Number.isFinite(priceStock) ||
+    priceStock <= 0
+  ) {
+    throw new Error(
+      "Ingresa un precio de stock válido."
+    );
   }
-
-  const { data, error } = await supabase
-    .from("series_products")
-    .insert({
-      name,
-      price: priceStock,
-      price_preorder: pricePreorder,
-      price_stock: priceStock,
-      sizes,
-      pieces_per_series: sizes.length,
-      status: "preorder",
-      series_available: 0,
-      stock_series_available: 0,
-      preorder_series_available: 0,
-      description: "",
-      active: true,
-    })
-    .select("id,code,slug")
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/");
-  revalidatePath("/series");
-  revalidatePath("/admin/series");
-  redirect(`/admin/series/${data.id}`);
-}
-
-export async function updateSeriesProduct(formData: FormData) {
-  const supabase = await createClient();
-
-  const id = String(formData.get("id"));
-  const name = String(formData.get("name") ?? "").trim();
-  const sizes = csvText(formData.get("sizes"));
-  const pricePreorder = Number(formData.get("price_preorder") ?? 0);
-  const priceStock = Number(formData.get("price_stock") ?? 0);
-  const preorderMarkup = Number(formData.get("preorder_markup_pct") ?? 30);
-  const stockMarkup = Number(formData.get("stock_markup_pct") ?? 40);
-  const description = String(formData.get("description") ?? "");
 
   const { error } = await supabase
     .from("series_products")
     .update({
       name,
-      sizes,
-      pieces_per_series: sizes.length,
-      price_preorder: pricePreorder,
-      price_stock: priceStock,
+
+      price_preorder:
+        pricePreorder,
+
+      price_stock:
+        priceStock,
+
       preorder_markup_pct:
-        Number.isFinite(preorderMarkup) && preorderMarkup >= 0
+        Number.isFinite(
+          preorderMarkup
+        )
           ? preorderMarkup
           : 30,
+
       stock_markup_pct:
-        Number.isFinite(stockMarkup) && stockMarkup >= 0 ? stockMarkup : 40,
+        Number.isFinite(
+          stockMarkup
+        )
+          ? stockMarkup
+          : 40,
+
       description,
-      active: formData.get("active") === "on",
-      featured: formData.get("featured") === "on",
-      updated_at: new Date().toISOString(),
+
+      active:
+        formData.get("active") === "on",
+
+      featured:
+        formData.get("featured") === "on",
+
+      updated_at:
+        new Date().toISOString(),
     })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/series");
-  revalidatePath(`/admin/series/${id}`);
   revalidatePath("/admin/series");
+  revalidatePath(`/admin/series/${id}`);
 }
 
-export async function setSeriesCover(formData: FormData) {
+export async function setSeriesCover(
+  formData: FormData
+) {
   const supabase = await createClient();
-  const id = String(formData.get("id"));
-  const url = String(formData.get("url"));
+
+  const id = String(
+    formData.get("id")
+  );
+
+  const url = String(
+    formData.get("url")
+  );
 
   const { error } = await supabase
     .from("series_products")
     .update({
       cover_url: url,
-      updated_at: new Date().toISOString(),
+      updated_at:
+        new Date().toISOString(),
     })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/series");
   revalidatePath(`/admin/series/${id}`);
 }
 
-export async function adjustSeriesStock(formData: FormData) {
-  const supabase = await createClient();
-  const id = String(formData.get("id"));
-  const seriesAvailable = Number(formData.get("series_available"));
-
-  const { error } = await supabase
-    .from("series_products")
-    .update({
-      stock_series_available: Math.max(0, seriesAvailable),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/");
-  revalidatePath("/series");
-  revalidatePath("/admin/series");
-}
 
 // ============================================================
-// SERIES - COMPRAS CHINA
+// COMPRAS CHINA
 // ============================================================
 
-export async function createChinaPurchase(formData: FormData) {
+export async function createChinaPurchaseV2(
+  formData: FormData
+) {
   const supabase = await createClient();
-  const raw = String(formData.get("payload") ?? "{}");
+
+  const raw = String(
+    formData.get("payload") ?? "{}"
+  );
 
   let payload: unknown;
 
   try {
     payload = JSON.parse(raw);
   } catch {
-    throw new Error("No se pudo leer la compra. Intenta nuevamente.");
+    throw new Error(
+      "No se pudo leer la compra."
+    );
   }
 
-  const { data, error } = await supabase.rpc("create_series_china_purchase", {
-    p_payload: payload,
-  });
+  const { data, error } =
+    await supabase.rpc(
+      "create_series_china_purchase_v2",
+      {
+        p_payload: payload,
+      }
+    );
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/series");
@@ -273,21 +355,36 @@ export async function createChinaPurchase(formData: FormData) {
   revalidatePath("/admin/series");
   revalidatePath("/admin/series/compras");
 
-  redirect(`/admin/series/compras/${data}`);
+  redirect(
+    `/admin/series/compras/${data}`
+  );
 }
 
-export async function setChinaPurchaseStatus(formData: FormData) {
+export async function setChinaPurchaseStatusV2(
+  formData: FormData
+) {
   const supabase = await createClient();
 
-  const id = String(formData.get("id"));
-  const status = String(formData.get("status"));
+  const id = String(
+    formData.get("id")
+  );
 
-  const { error } = await supabase.rpc("set_series_china_purchase_status", {
-    p_purchase_id: id,
-    p_status: status,
-  });
+  const status = String(
+    formData.get("status")
+  );
 
-  if (error) throw new Error(error.message);
+  const { error } =
+    await supabase.rpc(
+      "set_series_china_purchase_status_v2",
+      {
+        p_purchase_id: id,
+        p_status: status,
+      }
+    );
+
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/series");
@@ -297,15 +394,26 @@ export async function setChinaPurchaseStatus(formData: FormData) {
   revalidatePath(`/admin/series/compras/${id}`);
 }
 
-export async function markChinaPurchaseReceived(formData: FormData) {
+export async function markChinaPurchaseReceivedV2(
+  formData: FormData
+) {
   const supabase = await createClient();
-  const id = String(formData.get("id"));
 
-  const { error } = await supabase.rpc("mark_series_china_purchase_received", {
-    p_purchase_id: id,
-  });
+  const id = String(
+    formData.get("id")
+  );
 
-  if (error) throw new Error(error.message);
+  const { error } =
+    await supabase.rpc(
+      "mark_series_china_purchase_received_v2",
+      {
+        p_purchase_id: id,
+      }
+    );
+
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath("/");
   revalidatePath("/series");
