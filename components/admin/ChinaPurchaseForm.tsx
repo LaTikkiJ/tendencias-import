@@ -11,14 +11,16 @@ import {
   CopyPlus,
   ImagePlus,
   Plus,
+  ReceiptText,
   Save,
   Trash2,
+  WalletCards,
   X,
 } from "lucide-react";
 
 import {
-  createChinaPurchaseV5,
-} from "@/app/admin/actions";
+  createChinaPurchaseV9,
+} from "@/app/admin/series/compras/actions-v9";
 
 import {
   createClient,
@@ -35,10 +37,15 @@ type ExistingProduct = {
   cover_url?: string | null;
 };
 
+type Currency =
+  | "PEN"
+  | "USD"
+  | "CNY";
+
 type ColorRow = {
   key: string;
   name: string;
-  qty: number;
+  qty: string;
 };
 
 type PurchaseRow = {
@@ -53,20 +60,42 @@ type PurchaseRow = {
   name: string;
   sizes: string[];
 
-  colors: ColorRow[];
-
-  supplier_cost_series: number;
-
-  preorder_price: number;
-  stock_price: number;
+  colors:
+    ColorRow[];
 
   cover_url: string;
+
+  supplier_cost_piece_original: string;
+
+  preorder_margin_pct: string;
+  stock_margin_pct: string;
+
+  preorder_price: string;
+  stock_price: string;
+
+  preorder_manual: boolean;
+  stock_manual: boolean;
 };
 
-type Currency =
-  | "PEN"
-  | "USD"
-  | "CNY";
+type PaymentRow = {
+  key: string;
+  payment_date: string;
+  stage: string;
+  amount_original: string;
+  exchange_rate: string;
+  payment_method: string;
+  reference: string;
+};
+
+type ExpenseRow = {
+  key: string;
+  expense_date: string;
+  concept: string;
+  currency: Currency;
+  amount: string;
+  exchange_rate: string;
+  reference: string;
+};
 
 const AGE_SIZES = [
   "1-2",
@@ -95,27 +124,58 @@ const BABY_SIZES = [
   "18-24m",
 ];
 
-function newColor(): ColorRow {
+const today =
+  new Date()
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
+
+function n(
+  value:
+    | string
+    | number
+    | null
+    | undefined
+) {
+  const parsed =
+    Number(
+      value ?? 0
+    );
+
+  return Number.isFinite(
+    parsed
+  )
+    ? parsed
+    : 0;
+}
+
+function newColor():
+  ColorRow {
   return {
     key:
       crypto.randomUUID(),
     name: "",
-    qty: 1,
+    qty: "",
   };
 }
 
-function newRow(): PurchaseRow {
+function newRow():
+  PurchaseRow {
   return {
     key:
       crypto.randomUUID(),
 
-    mode: "NEW",
+    mode:
+      "NEW",
 
-    product_id: "",
+    product_id:
+      "",
 
-    name: "",
+    name:
+      "",
 
-    // Por defecto una serie de 5 tallas consecutivas.
     sizes: [
       "1-2",
       "2-3",
@@ -128,25 +188,85 @@ function newRow(): PurchaseRow {
       newColor(),
     ],
 
-    supplier_cost_series:
-      0,
+    cover_url:
+      "",
+
+    supplier_cost_piece_original:
+      "",
+
+    preorder_margin_pct:
+      "20",
+
+    stock_margin_pct:
+      "20",
 
     preorder_price:
-      0,
+      "",
 
     stock_price:
-      0,
+      "",
 
-    cover_url: "",
+    preorder_manual:
+      false,
+
+    stock_manual:
+      false,
   };
 }
 
-function money(
-  value: number
-) {
-  return `S/ ${Number(
-    value || 0
-  ).toFixed(2)}`;
+function newPayment(
+  index: number
+): PaymentRow {
+  return {
+    key:
+      crypto.randomUUID(),
+
+    payment_date:
+      today,
+
+    stage:
+      index === 0
+        ? "Pago inicial"
+        : `Pago ${index + 1}`,
+
+    amount_original:
+      "",
+
+    exchange_rate:
+      "",
+
+    payment_method:
+      "",
+
+    reference:
+      "",
+  };
+}
+
+function newExpense():
+  ExpenseRow {
+  return {
+    key:
+      crypto.randomUUID(),
+
+    expense_date:
+      today,
+
+    concept:
+      "Flete",
+
+    currency:
+      "USD",
+
+    amount:
+      "",
+
+    exchange_rate:
+      "",
+
+    reference:
+      "",
+  };
 }
 
 function sortSizes(
@@ -160,12 +280,19 @@ function sortSizes(
   return [
     ...sizes,
   ].sort(
-    (a, b) => {
+    (
+      a,
+      b
+    ) => {
       const ai =
-        order.indexOf(a);
+        order.indexOf(
+          a
+        );
 
       const bi =
-        order.indexOf(b);
+        order.indexOf(
+          b
+        );
 
       if (
         ai === -1 &&
@@ -175,7 +302,8 @@ function sortSizes(
           b,
           undefined,
           {
-            numeric: true,
+            numeric:
+              true,
           }
         );
       }
@@ -197,10 +325,99 @@ function sortSizes(
   );
 }
 
+function currencySymbol(
+  currency: Currency
+) {
+  if (
+    currency ===
+    "USD"
+  ) {
+    return "USD";
+  }
+
+  if (
+    currency ===
+    "CNY"
+  ) {
+    return "CNY";
+  }
+
+  return "S/";
+}
+
+function moneyPen(
+  value: number
+) {
+  return `S/ ${Number(
+    value || 0
+  ).toFixed(
+    2
+  )}`;
+}
+
+function moneyOriginal(
+  value: number,
+  currency: Currency
+) {
+  return `${currencySymbol(
+    currency
+  )} ${Number(
+    value || 0
+  ).toFixed(
+    2
+  )}`;
+}
+
+function NumberInput({
+  value,
+  onChange,
+  placeholder,
+  min,
+  step = "0.01",
+  className = "",
+}: {
+  value: string;
+  onChange: (
+    value: string
+  ) => void;
+  placeholder?: string;
+  min?: number;
+  step?: string;
+  className?: string;
+}) {
+  return (
+    <input
+      type="number"
+      value={
+        value
+      }
+      onChange={(
+        e
+      ) =>
+        onChange(
+          e.target
+            .value
+        )
+      }
+      placeholder={
+        placeholder
+      }
+      min={
+        min
+      }
+      step={
+        step
+      }
+      className={`ti-input ${className}`}
+    />
+  );
+}
+
 export function ChinaPurchaseForm({
   products,
 }: {
-  products: ExistingProduct[];
+  products:
+    ExistingProduct[];
 }) {
   const supabase =
     createClient();
@@ -209,9 +426,7 @@ export function ChinaPurchaseForm({
     purchaseDate,
     setPurchaseDate,
   ] = useState(
-    new Date()
-      .toISOString()
-      .slice(0, 10)
+    today
   );
 
   const [
@@ -231,43 +446,43 @@ export function ChinaPurchaseForm({
     setCurrency,
   ] =
     useState<Currency>(
-      "PEN"
+      "USD"
     );
 
   const [
-    exchangeRate,
-    setExchangeRate,
-  ] = useState(1);
+    fallbackExchangeRate,
+    setFallbackExchangeRate,
+  ] = useState("");
 
   const [
-    supplierTotalOriginal,
-    setSupplierTotalOriginal,
-  ] = useState(0);
+    rows,
+    setRows,
+  ] =
+    useState<
+      PurchaseRow[]
+    >([
+      newRow(),
+    ]);
 
   const [
-    freight,
-    setFreight,
-  ] = useState(0);
+    payments,
+    setPayments,
+  ] =
+    useState<
+      PaymentRow[]
+    >([
+      newPayment(
+        0
+      ),
+    ]);
 
   const [
-    taxes,
-    setTaxes,
-  ] = useState(0);
-
-  const [
-    commissions,
-    setCommissions,
-  ] = useState(0);
-
-  const [
-    localTransport,
-    setLocalTransport,
-  ] = useState(0);
-
-  const [
-    otherCosts,
-    setOtherCosts,
-  ] = useState(0);
+    expenses,
+    setExpenses,
+  ] =
+    useState<
+      ExpenseRow[]
+    >([]);
 
   const [
     notes,
@@ -275,73 +490,165 @@ export function ChinaPurchaseForm({
   ] = useState("");
 
   const [
-    rows,
-    setRows,
-  ] = useState<
-    PurchaseRow[]
-  >([newRow()]);
-
-  const [
     uploadingKey,
     setUploadingKey,
-  ] = useState<
-    string | null
-  >(null);
+  ] =
+    useState<
+      string | null
+    >(
+      null
+    );
 
   const [
     customSizes,
     setCustomSizes,
-  ] = useState<
-    Record<
-      string,
-      string
-    >
-  >({});
+  ] =
+    useState<
+      Record<
+        string,
+        string
+      >
+    >({});
 
   const productMap =
     useMemo(
       () =>
         new Map(
           products.map(
-            (product) => [
+            (
+              product
+            ) => [
               product.id,
               product,
             ]
           )
         ),
-      [products]
+      [
+        products,
+      ]
     );
 
-  const extraTotal =
-    Number(
-      freight || 0
-    ) +
-    Number(
-      taxes || 0
-    ) +
-    Number(
-      commissions || 0
-    ) +
-    Number(
-      localTransport ||
-        0
-    ) +
-    Number(
-      otherCosts || 0
+  const validPayments =
+    useMemo(
+      () =>
+        payments.filter(
+          (
+            payment
+          ) =>
+            n(
+              payment.amount_original
+            ) >
+            0
+        ),
+      [
+        payments,
+      ]
     );
 
-  const safeExchangeRate =
-    currency === "PEN"
-      ? 1
-      : Number(
-          exchangeRate || 0
+  const paymentsTotalOriginal =
+    validPayments.reduce(
+      (
+        sum,
+        payment
+      ) =>
+        sum +
+        n(
+          payment.amount_original
+        ),
+      0
+    );
+
+  const paymentsTotalPen =
+    validPayments.reduce(
+      (
+        sum,
+        payment
+      ) => {
+        const rate =
+          currency ===
+          "PEN"
+            ? 1
+            : n(
+                payment.exchange_rate
+              ) ||
+              n(
+                fallbackExchangeRate
+              );
+
+        return (
+          sum +
+          n(
+            payment.amount_original
+          ) *
+            rate
         );
+      },
+      0
+    );
+
+  const effectiveRate =
+    currency ===
+    "PEN"
+      ? 1
+      : paymentsTotalOriginal >
+          0
+        ? paymentsTotalPen /
+          paymentsTotalOriginal
+        : n(
+            fallbackExchangeRate
+          );
+
+  const validExpenses =
+    useMemo(
+      () =>
+        expenses.filter(
+          (
+            expense
+          ) =>
+            n(
+              expense.amount
+            ) >
+            0
+        ),
+      [
+        expenses,
+      ]
+    );
+
+  const expensesTotalPen =
+    validExpenses.reduce(
+      (
+        sum,
+        expense
+      ) => {
+        const rate =
+          expense.currency ===
+          "PEN"
+            ? 1
+            : n(
+                expense.exchange_rate
+              ) ||
+              effectiveRate;
+
+        return (
+          sum +
+          n(
+            expense.amount
+          ) *
+            rate
+        );
+      },
+      0
+    );
 
   const computed =
-    useMemo(() => {
-      const base =
+    useMemo(
+      () =>
         rows.map(
-          (row) => {
+          (
+            row,
+            index
+          ) => {
             const existing =
               row.product_id
                 ? productMap.get(
@@ -354,24 +661,12 @@ export function ChinaPurchaseForm({
                 Array.from(
                   new Set(
                     row.sizes
-                      .map(
-                        (
-                          size
-                        ) =>
-                          size.trim()
-                      )
-                      .filter(
-                        Boolean
-                      )
                   )
                 )
               );
 
             const pieces =
-              Math.max(
-                sizes.length,
-                1
-              );
+              sizes.length;
 
             const validColors =
               row.colors
@@ -381,25 +676,27 @@ export function ChinaPurchaseForm({
                   ) => ({
                     name:
                       color.name.trim(),
+
                     qty:
                       Math.max(
-                        Number(
-                          color.qty ||
-                            0
-                        ),
-                        0
+                        0,
+                        Math.floor(
+                          n(
+                            color.qty
+                          )
+                        )
                       ),
                   })
                 )
                 .filter(
-                  (color) =>
+                  (
+                    color
+                  ) =>
                     color.name &&
                     color.qty >
                       0
                 );
 
-            // TOTAL SERIES = suma de las series compradas de cada color.
-            // Ejemplo: Rosado 5 + Negro 5 = 10 series.
             const totalSeries =
               validColors.reduce(
                 (
@@ -411,347 +708,247 @@ export function ChinaPurchaseForm({
                 0
               );
 
-            const supplierCostSeriesOriginal =
-              Number(
-                row.supplier_cost_series ||
-                  0
-              );
-
-            const supplierCostSeriesPen =
-              supplierCostSeriesOriginal *
-              Number(
-                safeExchangeRate ||
-                  0
-              );
-
-            const supplierCostPieceOriginal =
-              pieces > 0
-                ? supplierCostSeriesOriginal /
-                  pieces
-                : 0;
-
-            const supplierCostPiecePen =
-              pieces > 0
-                ? supplierCostSeriesPen /
-                  pieces
-                : 0;
-
-            const supplierSubtotalOriginal =
-              totalSeries *
-              supplierCostSeriesOriginal;
-
-            const supplierSubtotalPen =
-              totalSeries *
-              supplierCostSeriesPen;
-
-            const totalPiecesRow =
+            const totalPieces =
               totalSeries *
               pieces;
 
             return {
               ...row,
+              index,
               existing,
               sizes,
               pieces,
               validColors,
               totalSeries,
-              totalPiecesRow,
-              supplierCostSeriesOriginal,
-              supplierCostSeriesPen,
-              supplierCostPieceOriginal,
-              supplierCostPiecePen,
-              supplierSubtotalOriginal,
-              supplierSubtotalPen,
+              totalPieces,
             };
           }
-        );
+        ),
+      [
+        rows,
+        productMap,
+      ]
+    );
 
-      const allPieces =
-        base.reduce(
-          (
-            sum,
-            row
-          ) =>
-            sum +
-            row.totalPiecesRow,
-          0
-        );
-
-      // Regla solicitada:
-      // todos los gastos de importación se dividen ENTRE TODAS LAS PRENDAS.
-      const extraPerPiecePen =
-        allPieces > 0
-          ? extraTotal /
-            allPieces
-          : 0;
-
-      const extraPerPieceOriginal =
-        safeExchangeRate > 0
-          ? extraPerPiecePen /
-            safeExchangeRate
-          : 0;
-
-      return base.map(
-        (row) => {
-          const allocated =
-            extraPerPiecePen *
-            row.totalPiecesRow;
-
-          const allocatedOriginal =
-            safeExchangeRate > 0
-              ? allocated /
-                safeExchangeRate
-              : 0;
-
-          const landedPiecePen =
-            row.supplierCostPiecePen +
-            extraPerPiecePen;
-
-          const landedPieceOriginal =
-            row.supplierCostPieceOriginal +
-            extraPerPieceOriginal;
-
-          const landedSeriesPen =
-            landedPiecePen *
-            row.pieces;
-
-          const landedSeriesOriginal =
-            landedPieceOriginal *
-            row.pieces;
-
-          const landedTotalPen =
-            landedSeriesPen *
-            row.totalSeries;
-
-          const landedTotalOriginal =
-            landedSeriesOriginal *
-            row.totalSeries;
-
-          return {
-            ...row,
-            extraPerPiecePen,
-            extraPerPieceOriginal,
-            allocated,
-            allocatedOriginal,
-            landedPiecePen,
-            landedPieceOriginal,
-            landedSeriesPen,
-            landedSeriesOriginal,
-            landedTotalPen,
-            landedTotalOriginal,
-          };
-        }
-      );
-    }, [
-      rows,
-      productMap,
-      safeExchangeRate,
-      extraTotal,
-    ]);
-
-  const merchandiseTotalOriginal =
+  const allPieces =
     computed.reduce(
       (
         sum,
         row
       ) =>
         sum +
-        row.supplierSubtotalOriginal,
+        row.totalPieces,
       0
     );
 
-  const merchandiseTotalPen =
-    merchandiseTotalOriginal *
-    Number(
-      safeExchangeRate ||
-        0
-    );
-
-  const totalSeries =
+  const allSeries =
     computed.reduce(
-      (sum, row) =>
+      (
+        sum,
+        row
+      ) =>
         sum +
         row.totalSeries,
       0
     );
 
-  const totalPieces =
-    computed.reduce(
-      (sum, row) =>
+  const extraPerPiecePen =
+    allPieces >
+    0
+      ? expensesTotalPen /
+        allPieces
+      : 0;
+
+  const detailed =
+    computed.map(
+      (
+        row
+      ) => {
+        const providerPieceOriginal =
+          n(
+            row.supplier_cost_piece_original
+          );
+
+        const providerPiecePen =
+          providerPieceOriginal *
+          effectiveRate;
+
+        const finalPiecePen =
+          providerPiecePen +
+          extraPerPiecePen;
+
+        const finalPieceOriginal =
+          effectiveRate >
+          0
+            ? finalPiecePen /
+              effectiveRate
+            : 0;
+
+        const finalSeriesPen =
+          finalPiecePen *
+          row.pieces;
+
+        const providerSubtotalOriginal =
+          providerPieceOriginal *
+          row.totalPieces;
+
+        const providerSubtotalPen =
+          providerSubtotalOriginal *
+          effectiveRate;
+
+        const preorderMargin =
+          Math.max(
+            20,
+            n(
+              row.preorder_margin_pct
+            ) ||
+              20
+          );
+
+        const stockMargin =
+          Math.max(
+            20,
+            n(
+              row.stock_margin_pct
+            ) ||
+              20
+          );
+
+        const suggestedPreorder =
+          finalSeriesPen *
+          (
+            1 +
+            preorderMargin /
+              100
+          );
+
+        const suggestedStock =
+          finalSeriesPen *
+          (
+            1 +
+            stockMargin /
+              100
+          );
+
+        const preorderFinal =
+          row.preorder_manual
+            ? n(
+                row.preorder_price
+              )
+            : suggestedPreorder;
+
+        const stockFinal =
+          row.stock_manual
+            ? n(
+                row.stock_price
+              )
+            : suggestedStock;
+
+        const preorderPieceSale =
+          row.pieces >
+          0
+            ? preorderFinal /
+              row.pieces
+            : 0;
+
+        const stockPieceSale =
+          row.pieces >
+          0
+            ? stockFinal /
+              row.pieces
+            : 0;
+
+        const preorderProfitPiece =
+          preorderPieceSale -
+          finalPiecePen;
+
+        const stockProfitPiece =
+          stockPieceSale -
+          finalPiecePen;
+
+        const preorderActualMargin =
+          finalPiecePen >
+          0
+            ? (
+                preorderProfitPiece /
+                finalPiecePen
+              ) *
+              100
+            : 0;
+
+        const stockActualMargin =
+          finalPiecePen >
+          0
+            ? (
+                stockProfitPiece /
+                finalPiecePen
+              ) *
+              100
+            : 0;
+
+        return {
+          ...row,
+
+          providerPieceOriginal,
+          providerPiecePen,
+
+          providerSubtotalOriginal,
+          providerSubtotalPen,
+
+          finalPiecePen,
+          finalPieceOriginal,
+          finalSeriesPen,
+
+          preorderMargin,
+          stockMargin,
+
+          suggestedPreorder,
+          suggestedStock,
+
+          preorderFinal,
+          stockFinal,
+
+          preorderProfitPiece,
+          stockProfitPiece,
+
+          preorderActualMargin,
+          stockActualMargin,
+        };
+      }
+    );
+
+  const supplierValueOriginal =
+    detailed.reduce(
+      (
+        sum,
+        row
+      ) =>
         sum +
-        row.totalPiecesRow,
+        row.providerSubtotalOriginal,
       0
     );
 
-  const extraPerPiecePen =
-    totalPieces > 0
-      ? extraTotal /
-        totalPieces
-      : 0;
+  const supplierValuePen =
+    supplierValueOriginal *
+    effectiveRate;
 
-  const extraPerPieceOriginal =
-    safeExchangeRate > 0
-      ? extraPerPiecePen /
-        safeExchangeRate
-      : 0;
-
-  const declaredSupplierTotalOriginal =
-    Number(
-      supplierTotalOriginal ||
-        0
-    );
-
-  const declaredSupplierTotalPen =
-    declaredSupplierTotalOriginal *
-    Number(
-      safeExchangeRate ||
-        0
-    );
-
-  const supplierDifferenceOriginal =
-    declaredSupplierTotalOriginal -
-    merchandiseTotalOriginal;
-
-  const supplierBalanced =
-    declaredSupplierTotalOriginal > 0 &&
-    Math.abs(
-      supplierDifferenceOriginal
-    ) <= 0.1;
-
-  const totalPaidPen =
-    declaredSupplierTotalPen +
-    extraTotal;
-
-  const totalPaidOriginal =
-    safeExchangeRate > 0
-      ? totalPaidPen /
-        safeExchangeRate
-      : 0;
-
-  const selectedCurrencySymbol =
-    currency === "USD"
-      ? "$"
-      : currency === "CNY"
-        ? "¥"
-        : "S/";
-
-  function moneyOriginal(
-    value: number
-  ) {
-    return `${selectedCurrencySymbol} ${Number(
-      value || 0
-    ).toFixed(2)}`;
-  }
-
-  const payload = {
-    purchase_date:
-      purchaseDate,
-
-    supplier,
-
-    status,
-
-    currency,
-
-    exchange_rate:
-      currency ===
-      "PEN"
-        ? 1
-        : Number(
-            exchangeRate ||
-              1
-          ),
-
-    supplier_total_original:
-      Number(
-        supplierTotalOriginal ||
-          0
-      ),
-
-    freight:
-      Number(
-        freight || 0
-      ),
-
-    taxes:
-      Number(
-        taxes || 0
-      ),
-
-    commissions:
-      Number(
-        commissions ||
-          0
-      ),
-
-    local_transport:
-      Number(
-        localTransport ||
-          0
-      ),
-
-    other_costs:
-      Number(
-        otherCosts || 0
-      ),
-
-    notes,
-
-    items:
-      computed.map(
-        (row) => ({
-          product_id:
-            row.mode ===
-              "EXISTING"
-              ? row.product_id
-              : null,
-
-          name:
-            row.mode ===
-              "EXISTING"
-              ? row.existing
-                  ?.name
-              : row.name.trim(),
-
-          sizes:
-            row.sizes,
-
-          colors:
-            row.validColors,
-
-          supplier_cost_series:
-            Number(
-              row.supplier_cost_series ||
-                0
-            ),
-
-          preorder_price:
-            Number(
-              row.preorder_price ||
-                0
-            ),
-
-          stock_price:
-            Number(
-              row.stock_price ||
-                0
-            ),
-
-          cover_url:
-            row.cover_url ||
-            null,
-        })
-      ),
-  };
+  const supplierBalanceOriginal =
+    supplierValueOriginal -
+    paymentsTotalOriginal;
 
   function updateRow(
     key: string,
-    patch: Partial<PurchaseRow>
+    patch:
+      Partial<PurchaseRow>
   ) {
     setRows(
-      (current) =>
+      (
+        current
+      ) =>
         current.map(
-          (row) =>
+          (
+            row
+          ) =>
             row.key ===
             key
               ? {
@@ -763,131 +960,51 @@ export function ChinaPurchaseForm({
     );
   }
 
-  function toggleSize(
-    rowKey: string,
-    size: string
+  function updatePayment(
+    key: string,
+    patch:
+      Partial<PaymentRow>
   ) {
-    setRows(
-      (current) =>
-        current.map(
-          (row) => {
-            if (
-              row.key !==
-              rowKey
-            ) {
-              return row;
-            }
-
-            const exists =
-              row.sizes.includes(
-                size
-              );
-
-            const next =
-              exists
-                ? row.sizes.filter(
-                    (
-                      item
-                    ) =>
-                      item !==
-                      size
-                  )
-                : [
-                    ...row.sizes,
-                    size,
-                  ];
-
-            return {
-              ...row,
-              sizes:
-                sortSizes(
-                  next
-                ),
-            };
-          }
-        )
-    );
-  }
-
-  function addCustomSize(
-    rowKey: string
-  ) {
-    const value =
+    setPayments(
       (
-        customSizes[
-          rowKey
-        ] ?? ""
-      ).trim();
-
-    if (!value) {
-      return;
-    }
-
-    setRows(
-      (current) =>
+        current
+      ) =>
         current.map(
-          (row) =>
-            row.key ===
-            rowKey
+          (
+            payment
+          ) =>
+            payment.key ===
+            key
               ? {
-                  ...row,
-                  sizes:
-                    sortSizes(
-                      Array.from(
-                        new Set(
-                          [
-                            ...row.sizes,
-                            value,
-                          ]
-                        )
-                      )
-                    ),
+                  ...payment,
+                  ...patch,
                 }
-              : row
+              : payment
         )
-    );
-
-    setCustomSizes(
-      (current) => ({
-        ...current,
-        [rowKey]:
-          "",
-      })
     );
   }
 
-  function setQuickRange(
-    rowKey: string,
-    start:
-      | 1
-      | 2
-      | 3
-      | 4
-      | 5
+  function updateExpense(
+    key: string,
+    patch:
+      Partial<ExpenseRow>
   ) {
-    const quick =
-      Array.from(
-        {
-          length: 5,
-        },
-        (
-          _,
-          index
-        ) => {
-          const from =
-            start +
-            index;
-
-          return `${from}-${from + 1}`;
-        }
-      );
-
-    updateRow(
-      rowKey,
-      {
-        sizes:
-          quick,
-      }
+    setExpenses(
+      (
+        current
+      ) =>
+        current.map(
+          (
+            expense
+          ) =>
+            expense.key ===
+            key
+              ? {
+                  ...expense,
+                  ...patch,
+                }
+              : expense
+        )
     );
   }
 
@@ -907,7 +1024,8 @@ export function ChinaPurchaseForm({
           mode,
           product_id:
             "",
-          name: "",
+          name:
+            "",
           sizes: [
             "1-2",
             "2-3",
@@ -915,12 +1033,22 @@ export function ChinaPurchaseForm({
             "4-5",
             "5-6",
           ],
-          preorder_price:
-            0,
-          stock_price:
-            0,
           cover_url:
             "",
+          supplier_cost_piece_original:
+            "",
+          preorder_margin_pct:
+            "20",
+          stock_margin_pct:
+            "20",
+          preorder_price:
+            "",
+          stock_price:
+            "",
+          preorder_manual:
+            false,
+          stock_manual:
+            false,
         }
       );
 
@@ -943,27 +1071,39 @@ export function ChinaPurchaseForm({
         sizes:
           first?.sizes ??
           [],
-        preorder_price:
-          Number(
-            first
-              ?.price_preorder ??
-              0
-          ),
-        stock_price:
-          Number(
-            first
-              ?.price_stock ??
-              0
-          ),
         cover_url:
           first
             ?.cover_url ??
           "",
+        preorder_price:
+          first
+            ?.price_preorder
+            ? String(
+                first.price_preorder
+              )
+            : "",
+        stock_price:
+          first
+            ?.price_stock
+            ? String(
+                first.price_stock
+              )
+            : "",
+        preorder_manual:
+          Boolean(
+            first
+              ?.price_preorder
+          ),
+        stock_manual:
+          Boolean(
+            first
+              ?.price_stock
+          ),
       }
     );
   }
 
-  function selectExistingProduct(
+  function selectExisting(
     key: string,
     productId: string
   ) {
@@ -986,37 +1126,184 @@ export function ChinaPurchaseForm({
           product?.sizes ??
           [],
 
-        preorder_price:
-          Number(
-            product
-              ?.price_preorder ??
-              0
-          ),
-
-        stock_price:
-          Number(
-            product
-              ?.price_stock ??
-              0
-          ),
-
         cover_url:
           product
             ?.cover_url ??
           "",
+
+        preorder_price:
+          product
+            ?.price_preorder
+            ? String(
+                product.price_preorder
+              )
+            : "",
+
+        stock_price:
+          product
+            ?.price_stock
+            ? String(
+                product.price_stock
+              )
+            : "",
+
+        preorder_manual:
+          Boolean(
+            product
+              ?.price_preorder
+          ),
+
+        stock_manual:
+          Boolean(
+            product
+              ?.price_stock
+          ),
       }
+    );
+  }
+
+  function toggleSize(
+    rowKey: string,
+    size: string
+  ) {
+    setRows(
+      (
+        current
+      ) =>
+        current.map(
+          (
+            row
+          ) => {
+            if (
+              row.key !==
+              rowKey
+            ) {
+              return row;
+            }
+
+            const exists =
+              row.sizes.includes(
+                size
+              );
+
+            return {
+              ...row,
+
+              sizes:
+                sortSizes(
+                  exists
+                    ? row.sizes.filter(
+                        (
+                          item
+                        ) =>
+                          item !==
+                          size
+                      )
+                    : [
+                        ...row.sizes,
+                        size,
+                      ]
+                ),
+            };
+          }
+        )
+    );
+  }
+
+  function quickRange(
+    rowKey: string,
+    start: number
+  ) {
+    updateRow(
+      rowKey,
+      {
+        sizes:
+          Array.from(
+            {
+              length:
+                5,
+            },
+            (
+              _,
+              index
+            ) => {
+              const from =
+                start +
+                index;
+
+              return `${from}-${from + 1}`;
+            }
+          ),
+      }
+    );
+  }
+
+  function addCustomSize(
+    rowKey: string
+  ) {
+    const value =
+      (
+        customSizes[
+          rowKey
+        ] ?? ""
+      ).trim();
+
+    if (!value) {
+      return;
+    }
+
+    setRows(
+      (
+        current
+      ) =>
+        current.map(
+          (
+            row
+          ) =>
+            row.key ===
+            rowKey
+              ? {
+                  ...row,
+
+                  sizes:
+                    sortSizes(
+                      Array.from(
+                        new Set([
+                          ...row.sizes,
+                          value,
+                        ])
+                      )
+                    ),
+                }
+              : row
+        )
+    );
+
+    setCustomSizes(
+      (
+        current
+      ) => ({
+        ...current,
+        [rowKey]:
+          "",
+      })
     );
   }
 
   function updateColor(
     rowKey: string,
     colorKey: string,
-    patch: Partial<ColorRow>
+    patch:
+      Partial<ColorRow>
   ) {
     setRows(
-      (current) =>
+      (
+        current
+      ) =>
         current.map(
-          (row) => {
+          (
+            row
+          ) => {
             if (
               row.key !==
               rowKey
@@ -1026,6 +1313,7 @@ export function ChinaPurchaseForm({
 
             return {
               ...row,
+
               colors:
                 row.colors.map(
                   (
@@ -1049,13 +1337,18 @@ export function ChinaPurchaseForm({
     rowKey: string
   ) {
     setRows(
-      (current) =>
+      (
+        current
+      ) =>
         current.map(
-          (row) =>
+          (
+            row
+          ) =>
             row.key ===
             rowKey
               ? {
                   ...row,
+
                   colors: [
                     ...row.colors,
                     newColor(),
@@ -1071,9 +1364,13 @@ export function ChinaPurchaseForm({
     colorKey: string
   ) {
     setRows(
-      (current) =>
+      (
+        current
+      ) =>
         current.map(
-          (row) => {
+          (
+            row
+          ) => {
             if (
               row.key !==
               rowKey
@@ -1091,6 +1388,7 @@ export function ChinaPurchaseForm({
 
             return {
               ...row,
+
               colors:
                 row.colors.filter(
                   (
@@ -1105,22 +1403,6 @@ export function ChinaPurchaseForm({
     );
   }
 
-  function removeRow(
-    key: string
-  ) {
-    setRows(
-      (current) =>
-        current.length ===
-        1
-          ? current
-          : current.filter(
-              (row) =>
-                row.key !==
-                key
-            )
-    );
-  }
-
   async function uploadCover(
     rowKey: string,
     file: File
@@ -1132,7 +1414,9 @@ export function ChinaPurchaseForm({
     try {
       const ext =
         file.name
-          .split(".")
+          .split(
+            "."
+          )
           .pop()
           ?.toLowerCase() ||
         "jpg";
@@ -1162,7 +1446,9 @@ export function ChinaPurchaseForm({
         throw error;
       }
 
-      const { data } =
+      const {
+        data,
+      } =
         supabase.storage
           .from(
             "catalog-media"
@@ -1194,17 +1480,30 @@ export function ChinaPurchaseForm({
     }
   }
 
-  const canSubmit =
-    computed.length >
-      0 &&
-    safeExchangeRate > 0 &&
-    supplierBalanced &&
-    computed.every(
-      (row) =>
+  const pricesValid =
+    detailed.every(
+      (
+        row
+      ) =>
+        row.preorderActualMargin +
+          0.01 >=
+          row.preorderMargin &&
+        row.stockActualMargin +
+          0.01 >=
+          row.stockMargin
+    );
+
+  const modelsValid =
+    detailed.every(
+      (
+        row
+      ) =>
         (
           row.mode ===
             "EXISTING"
-            ? !!row.product_id
+            ? Boolean(
+                row.product_id
+              )
             : row.name.trim()
                 .length >
               1
@@ -1216,21 +1515,196 @@ export function ChinaPurchaseForm({
           0 &&
         row.totalSeries >
           0 &&
-        Number(
-          row.supplier_cost_series
-        ) > 0 &&
-        Number(
-          row.preorder_price
-        ) > 0 &&
-        Number(
-          row.stock_price
-        ) > 0
+        row.providerPieceOriginal >
+          0
     );
+
+  const paymentsValid =
+    validPayments.length >
+      0 &&
+    (
+      currency ===
+        "PEN" ||
+      validPayments.every(
+        (
+          payment
+        ) =>
+          (
+            n(
+              payment.exchange_rate
+            ) ||
+            n(
+              fallbackExchangeRate
+            )
+          ) >
+          0
+      )
+    );
+
+  const expensesValid =
+    validExpenses.every(
+      (
+        expense
+      ) =>
+        expense.currency ===
+          "PEN" ||
+        (
+          n(
+            expense.exchange_rate
+          ) ||
+          effectiveRate
+        ) >
+          0
+    );
+
+  const canSubmit =
+    modelsValid &&
+    paymentsValid &&
+    expensesValid &&
+    pricesValid &&
+    effectiveRate >
+      0 &&
+    uploadingKey ===
+      null;
+
+  const payload = {
+    purchase_date:
+      purchaseDate,
+
+    supplier:
+      supplier.trim(),
+
+    status,
+
+    currency,
+
+    fallback_exchange_rate:
+      effectiveRate ||
+      n(
+        fallbackExchangeRate
+      ),
+
+    notes:
+      notes.trim(),
+
+    payments:
+      validPayments.map(
+        (
+          payment
+        ) => ({
+          payment_date:
+            payment.payment_date,
+
+          stage:
+            payment.stage.trim(),
+
+          amount_original:
+            n(
+              payment.amount_original
+            ),
+
+          exchange_rate:
+            currency ===
+            "PEN"
+              ? 1
+              : n(
+                  payment.exchange_rate
+                ) ||
+                n(
+                  fallbackExchangeRate
+                ),
+
+          payment_method:
+            payment.payment_method.trim(),
+
+          reference:
+            payment.reference.trim(),
+        })
+      ),
+
+    expenses:
+      validExpenses.map(
+        (
+          expense
+        ) => ({
+          expense_date:
+            expense.expense_date,
+
+          concept:
+            expense.concept,
+
+          currency:
+            expense.currency,
+
+          amount:
+            n(
+              expense.amount
+            ),
+
+          exchange_rate:
+            expense.currency ===
+            "PEN"
+              ? 1
+              : n(
+                  expense.exchange_rate
+                ) ||
+                effectiveRate,
+
+          reference:
+            expense.reference.trim(),
+        })
+      ),
+
+    items:
+      detailed.map(
+        (
+          row
+        ) => ({
+          product_id:
+            row.mode ===
+              "EXISTING"
+              ? row.product_id
+              : null,
+
+          name:
+            row.mode ===
+              "EXISTING"
+              ? row.existing
+                  ?.name
+              : row.name.trim(),
+
+          sizes:
+            row.sizes,
+
+          colors:
+            row.validColors,
+
+          cover_url:
+            row.cover_url ||
+            null,
+
+          supplier_cost_piece_original:
+            row.providerPieceOriginal,
+
+          preorder_margin_pct:
+            row.preorderMargin,
+
+          stock_margin_pct:
+            row.stockMargin,
+
+          preorder_price:
+            row.preorderFinal,
+
+          stock_price:
+            row.stockFinal,
+        })
+      ),
+  };
 
   return (
     <form
       action={
-        createChinaPurchaseV5
+        createChinaPurchaseV9
       }
       className="space-y-6"
     >
@@ -1243,7 +1717,7 @@ export function ChinaPurchaseForm({
       />
 
       <section className="rounded-[28px] border border-[#eaded3] bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div>
             <label className="mb-2 block text-xs font-black">
               Fecha
@@ -1254,7 +1728,9 @@ export function ChinaPurchaseForm({
               value={
                 purchaseDate
               }
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setPurchaseDate(
                   e.target
                     .value
@@ -1264,7 +1740,7 @@ export function ChinaPurchaseForm({
             />
           </div>
 
-          <div className="sm:col-span-1 xl:col-span-2">
+          <div>
             <label className="mb-2 block text-xs font-black">
               Proveedor
             </label>
@@ -1273,7 +1749,9 @@ export function ChinaPurchaseForm({
               value={
                 supplier
               }
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setSupplier(
                   e.target
                     .value
@@ -1293,7 +1771,9 @@ export function ChinaPurchaseForm({
               value={
                 status
               }
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setStatus(
                   e.target
                     .value
@@ -1301,51 +1781,41 @@ export function ChinaPurchaseForm({
               }
               className="ti-input"
             >
-              <option value="EN_TRANSITO">
-                En tránsito
-              </option>
-
               <option value="PEDIDO">
                 Pedido
+              </option>
+
+              <option value="EN_TRANSITO">
+                En tránsito
               </option>
             </select>
           </div>
 
           <div>
             <label className="mb-2 block text-xs font-black">
-              Moneda
+              Moneda proveedor
             </label>
 
             <select
               value={
                 currency
               }
-              onChange={(e) => {
-                const value =
-                  e.target
-                    .value as Currency;
-
+              onChange={(
+                e
+              ) =>
                 setCurrency(
-                  value
-                );
-
-                if (
-                  value ===
-                  "PEN"
-                ) {
-                  setExchangeRate(
-                    1
-                  );
-                }
-              }}
+                  e.target
+                    .value as Currency
+                )
+              }
               className="ti-input"
             >
-              <option value="PEN">
-                PEN
-              </option>
-
               <option value="USD">
                 USD
+              </option>
+
+              <option value="PEN">
+                PEN
               </option>
 
               <option value="CNY">
@@ -1357,213 +1827,364 @@ export function ChinaPurchaseForm({
 
         {currency !==
           "PEN" && (
-          <div className="mt-4 max-w-xs">
+          <div className="mt-4 max-w-sm">
             <label className="mb-2 block text-xs font-black">
-              Tipo de cambio a soles
+              Tipo de cambio base
+              <span className="ml-1 font-normal text-[#8b8078]">
+                (solo respaldo)
+              </span>
             </label>
 
-            <input
-              type="number"
-              min="0"
-              step="0.000001"
+            <NumberInput
               value={
-                exchangeRate
+                fallbackExchangeRate
               }
-              onChange={(e) =>
-                setExchangeRate(
-                  Number(
-                    e.target
-                      .value
-                  )
-                )
+              onChange={
+                setFallbackExchangeRate
               }
-              className="ti-input"
+              placeholder="Ej. 3.80"
+              min={0}
+              step="0.0001"
             />
+
+            <p className="mt-1 text-[9px] leading-4 text-[#8b8078]">
+              Si registras pagos con
+              distintos tipos de cambio,
+              el sistema usa el promedio
+              ponderado real.
+            </p>
           </div>
         )}
+      </section>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr]">
-          <div className="rounded-[18px] border border-[#eaded3] bg-[#fffdfb] p-4">
-            <label className="block text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
-              Total pagado al proveedor
-            </label>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
+              Pagos al proveedor
+            </p>
 
-            <div className="mt-2 flex overflow-hidden rounded-[14px] border border-[#eaded3] bg-white">
-              <span className="grid min-w-11 place-items-center bg-[#f8f4f0] text-xs font-black text-[#8f3a2e]">
-                {selectedCurrencySymbol}
-              </span>
+            <h2 className="mt-1 text-2xl font-black">
+              Lo que realmente depositaste
+            </h2>
 
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={supplierTotalOriginal}
-                onChange={(e) =>
-                  setSupplierTotalOriginal(
-                    Number(
-                      e.target.value
-                    )
-                  )
-                }
-                className="h-12 min-w-0 flex-1 border-0 px-3 text-base font-black outline-none"
-                placeholder="0.00"
-              />
-            </div>
-
-            <p className="mt-2 text-[10px] font-bold text-[#5a8b86]">
-              Equivale a {money(declaredSupplierTotalPen)}
+            <p className="mt-1 text-xs leading-5 text-[#7f746c]">
+              Registra pago inicial,
+              segundo pago, saldo, etc.
+              Puede quedar saldo pendiente.
             </p>
           </div>
 
-          <div className="rounded-[18px] border border-[#eaded3] bg-[#fffdfb] p-4">
-            <p className="text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
-              Suma de los modelos
-            </p>
-
-            <p className="mt-3 text-lg font-black">
-              {moneyOriginal(merchandiseTotalOriginal)}
-            </p>
-
-            <p className="mt-1 text-[10px] font-bold text-[#7f746c]">
-              {money(merchandiseTotalPen)}
-            </p>
-          </div>
-
-          <div
-            className={`rounded-[18px] border p-4 ${
-              supplierBalanced
-                ? "border-[#cfe4df] bg-[#f1f8f6]"
-                : "border-[#f0d4ca] bg-[#fff4ef]"
-            }`}
+          <button
+            type="button"
+            onClick={() =>
+              setPayments(
+                (
+                  current
+                ) => [
+                  ...current,
+                  newPayment(
+                    current.length
+                  ),
+                ]
+              )
+            }
+            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#edf7f5] px-4 text-xs font-black text-[#42746e]"
           >
-            <p className="text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
-              Control de cuadre
-            </p>
-
-            <p
-              className={`mt-3 text-lg font-black ${
-                supplierBalanced
-                  ? "text-[#42746e]"
-                  : "text-[#b63a2c]"
-              }`}
-            >
-              {supplierBalanced
-                ? "Cuadra perfecto ✓"
-                : `Diferencia ${moneyOriginal(supplierDifferenceOriginal)}`}
-            </p>
-
-            <p className="mt-1 text-[10px] leading-4 text-[#7f746c]">
-              El total del proveedor debe coincidir con la suma de todos los modelos antes de guardar.
-            </p>
-          </div>
+            <Plus
+              size={14}
+            />
+            Agregar pago
+          </button>
         </div>
 
-        <div className="mt-5 rounded-[18px] bg-[#fff8e9] p-4">
-          <p className="text-[10px] font-black text-[#9b6510]">
-            Gastos de importación
-          </p>
-
-          <p className="mt-1 text-[9px] leading-4 text-[#8b7146]">
-            Flete, impuestos, comisiones, transporte y otros se ingresan en soles. El sistema los divide por igual entre TODAS las prendas de esta carga.
-          </p>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-          {[
-            [
-              "Flete",
-              freight,
-              setFreight,
-            ],
-            [
-              "Impuestos",
-              taxes,
-              setTaxes,
-            ],
-            [
-              "Comisiones",
-              commissions,
-              setCommissions,
-            ],
-            [
-              "Transporte",
-              localTransport,
-              setLocalTransport,
-            ],
-            [
-              "Otros",
-              otherCosts,
-              setOtherCosts,
-            ],
-          ].map(
+        <div className="space-y-3">
+          {payments.map(
             (
-              [
-                label,
-                value,
-                setter,
-              ]: any
-            ) => (
-              <div
-                key={label}
-              >
-                <label className="mb-2 block text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
-                  {label}
-                </label>
+              payment,
+              index
+            ) => {
+              const rate =
+                currency ===
+                "PEN"
+                  ? 1
+                  : n(
+                      payment.exchange_rate
+                    ) ||
+                    n(
+                      fallbackExchangeRate
+                    );
 
-                <div className="flex overflow-hidden rounded-[14px] border border-[#eaded3]">
-                  <span className="grid min-w-9 place-items-center bg-[#f8f4f0] text-[10px] font-black text-[#8f3a2e]">
-                    S/
-                  </span>
+              const converted =
+                n(
+                  payment.amount_original
+                ) *
+                rate;
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={
-                      value
-                    }
-                    onChange={(
-                      e
-                    ) =>
-                      setter(
-                        Number(
+              return (
+                <article
+                  key={
+                    payment.key
+                  }
+                  className="rounded-[24px] border border-[#eaded3] bg-white p-4 shadow-sm sm:p-5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[.12em] text-[#b63a2c]">
+                        Pago {index + 1}
+                      </p>
+
+                      <h3 className="mt-1 text-lg font-black">
+                        {payment.stage ||
+                          "Pago al proveedor"}
+                      </h3>
+                    </div>
+
+                    {payments.length >
+                      1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPayments(
+                            (
+                              current
+                            ) =>
+                              current.filter(
+                                (
+                                  item
+                                ) =>
+                                  item.key !==
+                                  payment.key
+                              )
+                          )
+                        }
+                        className="grid size-9 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c]"
+                      >
+                        <Trash2
+                          size={14}
+                        />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div>
+                      <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                        Fecha
+                      </label>
+
+                      <input
+                        type="date"
+                        value={
+                          payment.payment_date
+                        }
+                        onChange={(
                           e
-                            .target
-                            .value
-                        )
-                      )
-                    }
-                    className="h-11 min-w-0 flex-1 border-0 px-2 text-sm font-black outline-none"
-                  />
-                </div>
+                        ) =>
+                          updatePayment(
+                            payment.key,
+                            {
+                              payment_date:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                      />
+                    </div>
 
-                {currency !== "PEN" && safeExchangeRate > 0 && (
-                  <p className="mt-1 text-[8px] font-bold text-[#8b8078]">
-                    ≈ {moneyOriginal(Number(value || 0) / safeExchangeRate)}
-                  </p>
-                )}
-              </div>
-            )
+                    <div>
+                      <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                        Etapa
+                      </label>
+
+                      <select
+                        value={
+                          payment.stage
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updatePayment(
+                            payment.key,
+                            {
+                              stage:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                      >
+                        <option>
+                          Pago inicial
+                        </option>
+                        <option>
+                          Segundo pago
+                        </option>
+                        <option>
+                          Saldo
+                        </option>
+                        <option>
+                          Otro pago
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                        Monto proveedor {currency}
+                      </label>
+
+                      <NumberInput
+                        value={
+                          payment.amount_original
+                        }
+                        onChange={(
+                          value
+                        ) =>
+                          updatePayment(
+                            payment.key,
+                            {
+                              amount_original:
+                                value,
+                            }
+                          )
+                        }
+                        placeholder={
+                          currency ===
+                          "USD"
+                            ? "Ej. 4442"
+                            : "Monto"
+                        }
+                        min={0}
+                      />
+                    </div>
+
+                    {currency !==
+                      "PEN" && (
+                      <div>
+                        <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                          Tipo de cambio
+                        </label>
+
+                        <NumberInput
+                          value={
+                            payment.exchange_rate
+                          }
+                          onChange={(
+                            value
+                          ) =>
+                            updatePayment(
+                              payment.key,
+                              {
+                                exchange_rate:
+                                  value,
+                              }
+                            )
+                          }
+                          placeholder="Ej. 3.80"
+                          min={0}
+                          step="0.0001"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                        Medio de pago
+                      </label>
+
+                      <input
+                        value={
+                          payment.payment_method
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updatePayment(
+                            payment.key,
+                            {
+                              payment_method:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                        placeholder="BCP, Interbank..."
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 xl:col-span-4">
+                      <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                        Referencia
+                      </label>
+
+                      <input
+                        value={
+                          payment.reference
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updatePayment(
+                            payment.key,
+                            {
+                              reference:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                        placeholder="Operación, detalle..."
+                      />
+                    </div>
+
+                    {n(
+                      payment.amount_original
+                    ) >
+                      0 &&
+                      rate >
+                        0 && (
+                      <div className="rounded-[16px] bg-[#fff0e9] p-3">
+                        <p className="text-[8px] font-black uppercase text-[#9b382b]">
+                          Equivale
+                        </p>
+
+                        <p className="mt-1 text-sm font-black text-[#9b382b]">
+                          {moneyPen(
+                            converted
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            }
           )}
         </div>
       </section>
 
-      <section>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.16em] text-[#5a8b86]">
-              Modelos de esta compra
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
+              Modelos / códigos
             </p>
 
             <h2 className="mt-1 text-2xl font-black">
-              Registra cada modelo
+              ¿Qué compraste?
             </h2>
 
             <p className="mt-1 text-xs leading-5 text-[#7f746c]">
-              El código se crea solo.
-              Para cada modelo eliges
-              sus tallas y agregas uno
-              o varios colores.
+              Cada modelo genera un
+              código TI automático.
+              Los colores pertenecen
+              al mismo código.
             </p>
           </div>
 
@@ -1584,193 +2205,176 @@ export function ChinaPurchaseForm({
             <CopyPlus
               size={15}
             />
-
-            Agregar otro modelo
+            Agregar modelo
           </button>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-2">
-          {computed.map(
+          {detailed.map(
             (
               row,
               index
-            ) => {
-              const colorFormula =
-                row.validColors
-                  .map(
-                    (
-                      color
-                    ) =>
-                      `${color.name} ${color.qty}`
-                  )
-                  .join(
-                    " + "
-                  );
+            ) => (
+              <article
+                key={
+                  row.key
+                }
+                className="overflow-hidden rounded-[28px] border border-[#eaded3] bg-white shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-[#eaded3] bg-[#fffdfb] px-4 py-4 sm:px-5">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[.12em] text-[#5a8b86]">
+                      Código {index + 1}
+                    </p>
 
-              return (
-                <article
-                  key={
-                    row.key
-                  }
-                  className="overflow-hidden rounded-[28px] border border-[#eaded3] bg-white shadow-[0_8px_24px_rgba(100,70,40,.05)]"
-                >
-                  <div className="flex items-center justify-between gap-3 border-b border-[#eaded3] bg-[#fffdfb] px-4 py-4 sm:px-5">
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-[.12em] text-[#5a8b86]">
-                        Modelo{" "}
-                        {index + 1}
-                      </p>
+                    <p className="mt-1 text-sm font-black">
+                      {row.mode ===
+                      "NEW"
+                        ? "Código TI automático"
+                        : row.existing
+                            ?.code ??
+                          "Código existente"}
+                    </p>
+                  </div>
 
-                      <p className="mt-1 text-sm font-black">
-                        {row.mode ===
-                        "NEW"
-                          ? "Código automático al guardar"
-                          : row.existing
-                              ?.code ??
-                            "Código existente"}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {row.totalSeries >
+                      0 &&
+                      row.totalPieces >
+                        0 && (
+                      <span className="rounded-full bg-[#edf7f5] px-3 py-2 text-[10px] font-black text-[#42746e]">
+                        {row.totalSeries} series · {row.totalPieces} prendas
+                      </span>
+                    )}
 
                     {rows.length >
                       1 && (
                       <button
                         type="button"
                         onClick={() =>
-                          removeRow(
-                            row.key
+                          setRows(
+                            (
+                              current
+                            ) =>
+                              current.filter(
+                                (
+                                  item
+                                ) =>
+                                  item.key !==
+                                  row.key
+                              )
                           )
                         }
                         className="grid size-9 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c]"
                       >
                         <Trash2
-                          size={
-                            14
-                          }
+                          size={14}
                         />
                       </button>
                     )}
                   </div>
+                </div>
 
-                  <div className="p-4 sm:p-5">
-                    <div className="grid grid-cols-2 gap-2 rounded-[18px] bg-[#f8f4f0] p-1.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setMode(
-                            row.key,
-                            "NEW"
-                          )
-                        }
-                        className={`min-h-10 rounded-[14px] text-[11px] font-black ${
-                          row.mode ===
+                <div className="p-4 sm:p-5">
+                  <div className="grid grid-cols-2 gap-2 rounded-[17px] bg-[#f8f4f0] p-1.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMode(
+                          row.key,
                           "NEW"
-                            ? "bg-white text-[#8f3a2e] shadow-sm"
-                            : "text-[#8b8078]"
-                        }`}
-                      >
-                        Nuevo modelo
-                      </button>
+                        )
+                      }
+                      className={`min-h-10 rounded-[13px] text-[10px] font-black ${
+                        row.mode ===
+                        "NEW"
+                          ? "bg-white text-[#8f3a2e] shadow-sm"
+                          : "text-[#8b8078]"
+                      }`}
+                    >
+                      Nuevo modelo
+                    </button>
 
-                      <button
-                        type="button"
-                        disabled={
-                          products.length ===
-                          0
+                    <button
+                      type="button"
+                      disabled={
+                        products.length ===
+                        0
+                      }
+                      onClick={() =>
+                        setMode(
+                          row.key,
+                          "EXISTING"
+                        )
+                      }
+                      className={`min-h-10 rounded-[13px] text-[10px] font-black disabled:opacity-30 ${
+                        row.mode ===
+                        "EXISTING"
+                          ? "bg-white text-[#5a8b86] shadow-sm"
+                          : "text-[#8b8078]"
+                      }`}
+                    >
+                      Ya existe
+                    </button>
+                  </div>
+
+                  {row.mode ===
+                  "EXISTING" ? (
+                    <div className="relative mt-4">
+                      <select
+                        value={
+                          row.product_id
                         }
-                        onClick={() =>
-                          setMode(
+                        onChange={(
+                          e
+                        ) =>
+                          selectExisting(
                             row.key,
-                            "EXISTING"
+                            e.target
+                              .value
                           )
                         }
-                        className={`min-h-10 rounded-[14px] text-[11px] font-black disabled:opacity-40 ${
-                          row.mode ===
-                          "EXISTING"
-                            ? "bg-white text-[#5a8b86] shadow-sm"
-                            : "text-[#8b8078]"
-                        }`}
+                        className="ti-input appearance-none pr-10"
                       >
-                        Ya existe
-                      </button>
+                        {products.map(
+                          (
+                            product
+                          ) => (
+                            <option
+                              key={
+                                product.id
+                              }
+                              value={
+                                product.id
+                              }
+                            >
+                              {product.code} · {product.name}
+                            </option>
+                          )
+                        )}
+                      </select>
+
+                      <ChevronDown
+                        size={15}
+                        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#8b8078]"
+                      />
                     </div>
+                  ) : (
+                    <div className="mt-4 rounded-[16px] bg-[#fff7f1] px-4 py-3">
+                      <p className="text-[8px] font-black uppercase tracking-[.1em] text-[#b63a2c]">
+                        Código TI
+                      </p>
 
-                    {row.mode ===
-                    "EXISTING" ? (
-                      <div className="mt-4">
-                        <label className="mb-2 block text-xs font-black">
-                          Elegir código
-                        </label>
+                      <p className="mt-1 text-sm font-black text-[#8f3a2e]">
+                        Se generará automáticamente
+                      </p>
+                    </div>
+                  )}
 
-                        <div className="relative">
-                          <select
-                            value={
-                              row.product_id
-                            }
-                            onChange={(
-                              e
-                            ) =>
-                              selectExistingProduct(
-                                row.key,
-                                e
-                                  .target
-                                  .value
-                              )
-                            }
-                            className="ti-input appearance-none pr-10"
-                          >
-                            {products.map(
-                              (
-                                product
-                              ) => (
-                                <option
-                                  key={
-                                    product.id
-                                  }
-                                  value={
-                                    product.id
-                                  }
-                                >
-                                  {
-                                    product.code
-                                  }{" "}
-                                  ·{" "}
-                                  {
-                                    product.name
-                                  }
-                                </option>
-                              )
-                            )}
-                          </select>
-
-                          <ChevronDown
-                            size={
-                              16
-                            }
-                            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#8b8078]"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-4 rounded-[18px] border border-[#f0dacf] bg-[#fff7f1] p-4">
-                        <p className="text-[9px] font-black uppercase tracking-[.12em] text-[#b63a2c]">
-                          Código
-                        </p>
-
-                        <p className="mt-1 text-lg font-black text-[#8f3a2e]">
-                          AUTOMÁTICO
-                        </p>
-
-                        <p className="mt-1 text-[10px] leading-4 text-[#8b8078]">
-                          Al guardar se
-                          generará TI0001,
-                          TI0002, etc.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="mt-4">
+                  <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_118px]">
+                    <div>
                       <label className="mb-2 block text-xs font-black">
-                        Nombre visible
+                        Nombre del modelo
                       </label>
 
                       <input
@@ -1784,8 +2388,7 @@ export function ChinaPurchaseForm({
                             row.key,
                             {
                               name:
-                                e
-                                  .target
+                                e.target
                                   .value,
                             }
                           )
@@ -1795,237 +2398,163 @@ export function ChinaPurchaseForm({
                           "EXISTING"
                         }
                         className="ti-input disabled:bg-[#f5f1ed]"
-                        placeholder="Ej: Conjunto Conejito"
+                        placeholder="Ej. Conjunto Conejito"
                       />
-
-                      <p className="mt-1 text-[9px] text-[#8b8078]">
-                        Este nombre se
-                        verá en la web.
-                      </p>
                     </div>
 
-                    {/* SELECTOR DE TALLAS */}
-                    <div className="mt-5 rounded-[20px] border border-[#eaded3] bg-[#fffdfb] p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-black">
-                            Tallas de la serie
-                          </p>
+                    <div>
+                      <label className="mb-2 block text-xs font-black">
+                        Foto
+                      </label>
 
-                          <p className="mt-1 text-[9px] leading-4 text-[#8b8078]">
-                            Toca todas las
-                            tallas que vienen
-                            dentro de UNA serie.
-                          </p>
-                        </div>
+                      <label className="grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-[16px] border border-dashed border-[#d9c8bb] bg-[#fffaf6]">
+                        {row.cover_url ? (
+                          <img
+                            src={
+                              row.cover_url
+                            }
+                            alt="Portada"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex flex-col items-center gap-1 text-[#5a8b86]">
+                            <Camera
+                              size={20}
+                            />
+                            <span className="text-[8px] font-black">
+                              Subir
+                            </span>
+                          </span>
+                        )}
 
-                        <span className="rounded-full bg-[#edf7f5] px-3 py-1.5 text-[9px] font-black text-[#42746e]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={
+                            uploadingKey ===
+                            row.key
+                          }
+                          onChange={(
+                            e
+                          ) => {
+                            const file =
+                              e.target
+                                .files?.[0];
+
+                            if (
+                              file
+                            ) {
+                              uploadCover(
+                                row.key,
+                                file
+                              );
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-[20px] border border-[#eaded3] bg-[#fffdfb] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black">
+                          Tallas de una serie
+                        </p>
+
+                        <p className="mt-1 text-[9px] text-[#8b8078]">
+                          Selecciona todas las tallas que trae una serie.
+                        </p>
+                      </div>
+
+                      {row.pieces >
+                        0 && (
+                        <span className="rounded-full bg-[#f4faf8] px-3 py-1.5 text-[9px] font-black text-[#42746e]">
                           {row.pieces} prendas / serie
                         </span>
-                      </div>
+                      )}
+                    </div>
 
-                      <div className="mt-3">
-                        <p className="text-[8px] font-black uppercase tracking-[.1em] text-[#8b8078]">
-                          Selección rápida
-                        </p>
-
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {[1, 2, 3, 4, 5].map(
-                            (
-                              start
-                            ) => (
-                              <button
-                                key={
-                                  start
-                                }
-                                type="button"
-                                onClick={() =>
-                                  setQuickRange(
-                                    row.key,
-                                    start as
-                                      | 1
-                                      | 2
-                                      | 3
-                                      | 4
-                                      | 5
-                                  )
-                                }
-                                className="rounded-full bg-[#fff0e9] px-3 py-2 text-[9px] font-black text-[#9b382b]"
-                              >
-                                {start}-{start + 1} a{" "}
-                                {start + 4}-{start + 5}
-                              </button>
-                            )
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <p className="text-[8px] font-black uppercase tracking-[.1em] text-[#8b8078]">
-                          Tallas por edad
-                        </p>
-
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {AGE_SIZES.map(
-                            (
-                              size
-                            ) => {
-                              const selected =
-                                row.sizes.includes(
-                                  size
-                                );
-
-                              return (
-                                <button
-                                  key={
-                                    size
-                                  }
-                                  type="button"
-                                  onClick={() =>
-                                    toggleSize(
-                                      row.key,
-                                      size
-                                    )
-                                  }
-                                  className={`min-w-12 rounded-full border px-3 py-2 text-[10px] font-black ${
-                                    selected
-                                      ? "border-[#8f3a2e] bg-[#8f3a2e] text-white"
-                                      : "border-[#eaded3] bg-white text-[#6f655e]"
-                                  }`}
-                                >
-                                  {
-                                    size
-                                  }
-                                </button>
-                              );
-                            }
-                          )}
-                        </div>
-                      </div>
-
-                      <details className="mt-4">
-                        <summary className="cursor-pointer text-[9px] font-black text-[#5a8b86]">
-                          Ver tallas bebé
-                        </summary>
-
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {BABY_SIZES.map(
-                            (
-                              size
-                            ) => {
-                              const selected =
-                                row.sizes.includes(
-                                  size
-                                );
-
-                              return (
-                                <button
-                                  key={
-                                    size
-                                  }
-                                  type="button"
-                                  onClick={() =>
-                                    toggleSize(
-                                      row.key,
-                                      size
-                                    )
-                                  }
-                                  className={`rounded-full border px-3 py-2 text-[10px] font-black ${
-                                    selected
-                                      ? "border-[#5a8b86] bg-[#5a8b86] text-white"
-                                      : "border-[#eaded3] bg-white text-[#6f655e]"
-                                  }`}
-                                >
-                                  {
-                                    size
-                                  }
-                                </button>
-                              );
-                            }
-                          )}
-                        </div>
-                      </details>
-
-                      <div className="mt-4">
-                        <p className="text-[8px] font-black uppercase tracking-[.1em] text-[#8b8078]">
-                          Otra talla
-                        </p>
-
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            value={
-                              customSizes[
-                                row.key
-                              ] ??
-                              ""
-                            }
-                            onChange={(
-                              e
-                            ) =>
-                              setCustomSizes(
-                                (
-                                  current
-                                ) => ({
-                                  ...current,
-                                  [row.key]:
-                                    e
-                                      .target
-                                      .value,
-                                })
-                              )
-                            }
-                            onKeyDown={(
-                              e
-                            ) => {
-                              if (
-                                e.key ===
-                                "Enter"
-                              ) {
-                                e.preventDefault();
-
-                                addCustomSize(
-                                  row.key
-                                );
-                              }
-                            }}
-                            className="ti-input"
-                            placeholder="Ej: 90 o 16-17"
-                          />
-
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5].map(
+                        (
+                          start
+                        ) => (
                           <button
+                            key={
+                              start
+                            }
                             type="button"
                             onClick={() =>
-                              addCustomSize(
-                                row.key
+                              quickRange(
+                                row.key,
+                                start
                               )
                             }
-                            className="grid min-w-12 place-items-center rounded-[16px] bg-[#f4faf8] text-[#42746e]"
+                            className="rounded-full bg-[#fff0e9] px-3 py-2 text-[9px] font-black text-[#9b382b]"
                           >
-                            <Plus
-                              size={
-                                16
-                              }
-                            />
+                            {start}-{start + 1} a {start + 4}-{start + 5}
                           </button>
-                        </div>
-                      </div>
+                        )
+                      )}
+                    </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {row.sizes.map(
-                          (
-                            size
-                          ) => (
-                            <span
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {AGE_SIZES.map(
+                        (
+                          size
+                        ) => {
+                          const active =
+                            row.sizes.includes(
+                              size
+                            );
+
+                          return (
+                            <button
                               key={
                                 size
                               }
-                              className="inline-flex items-center gap-1 rounded-full bg-[#f7f2ec] px-3 py-1.5 text-[9px] font-black text-[#5e554f]"
-                            >
-                              {
-                                size
+                              type="button"
+                              onClick={() =>
+                                toggleSize(
+                                  row.key,
+                                  size
+                                )
                               }
+                              className={`rounded-full border px-3 py-2 text-[10px] font-black ${
+                                active
+                                  ? "border-[#8f3a2e] bg-[#8f3a2e] text-white"
+                                  : "border-[#eaded3] bg-white text-[#6f655e]"
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
 
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-[9px] font-black text-[#5a8b86]">
+                        Tallas bebé
+                      </summary>
+
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {BABY_SIZES.map(
+                          (
+                            size
+                          ) => {
+                            const active =
+                              row.sizes.includes(
+                                size
+                              );
+
+                            return (
                               <button
+                                key={
+                                  size
+                                }
                                 type="button"
                                 onClick={() =>
                                   toggleSize(
@@ -2033,558 +2562,963 @@ export function ChinaPurchaseForm({
                                     size
                                   )
                                 }
+                                className={`rounded-full border px-3 py-2 text-[10px] font-black ${
+                                  active
+                                    ? "border-[#5a8b86] bg-[#5a8b86] text-white"
+                                    : "border-[#eaded3] bg-white text-[#6f655e]"
+                                }`}
                               >
-                                <X
-                                  size={
-                                    11
-                                  }
-                                />
+                                {size}
                               </button>
-                            </span>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    {/* FOTO */}
-                    <div className="mt-4 rounded-[20px] border border-[#eaded3] bg-[#fffdfb] p-4">
-                      <div className="flex items-center gap-3">
-                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#f4faf8] text-[#5a8b86]">
-                          <Camera
-                            size={
-                              16
-                            }
-                          />
-                        </span>
-
-                        <div>
-                          <p className="text-xs font-black">
-                            Foto portada
-                          </p>
-
-                          <p className="mt-0.5 text-[9px] leading-4 text-[#8b8078]">
-                            Será la primera
-                            imagen que verá
-                            la clienta.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-center gap-3">
-                        <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-[16px] bg-[#f1e9e1]">
-                          {row.cover_url ? (
-                            <img
-                              src={
-                                row.cover_url
-                              }
-                              alt="Portada"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <ImagePlus
-                              size={
-                                22
-                              }
-                              className="text-[#bda99b]"
-                            />
-                          )}
-                        </div>
-
-                        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-[#edf7f5] px-4 text-[10px] font-black text-[#42746e]">
-                          <ImagePlus
-                            size={
-                              14
-                            }
-                          />
-
-                          {uploadingKey ===
-                          row.key
-                            ? "Subiendo..."
-                            : row.cover_url
-                              ? "Cambiar foto"
-                              : "Subir foto"}
-
-                          <input
-                            type="file"
-                            accept="image/*"
-                            disabled={
-                              uploadingKey ===
-                              row.key
-                            }
-                            className="hidden"
-                            onChange={(
-                              e
-                            ) => {
-                              const file =
-                                e
-                                  .target
-                                  .files?.[0];
-
-                              if (
-                                file
-                              ) {
-                                uploadCover(
-                                  row.key,
-                                  file
-                                );
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* COLORES */}
-                    <div className="mt-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-black">
-                            Colores comprados
-                          </p>
-
-                          <p className="mt-1 text-[9px] text-[#8b8078]">
-                            La cantidad indica
-                            cuántas SERIES
-                            completas compró
-                            de ese color.
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            addColor(
-                              row.key
-                            )
+                            );
                           }
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#fff6e9] px-3 text-[9px] font-black text-[#9b6510]"
-                        >
-                          <Plus
-                            size={
-                              12
-                            }
-                          />
-                          Otro color
-                        </button>
-                      </div>
-
-                      <div className="mt-3 space-y-2">
-                        {row.colors.map(
-                          (
-                            color,
-                            colorIndex
-                          ) => (
-                            <div
-                              key={
-                                color.key
-                              }
-                              className="grid grid-cols-[1fr_105px_auto] gap-2 rounded-[16px] border border-[#eaded3] bg-[#fffdfb] p-2.5"
-                            >
-                              <div>
-                                <label className="mb-1 block text-[8px] font-black uppercase text-[#8b8078]">
-                                  Color{" "}
-                                  {colorIndex +
-                                    1}
-                                </label>
-
-                                <input
-                                  value={
-                                    color.name
-                                  }
-                                  onChange={(
-                                    e
-                                  ) =>
-                                    updateColor(
-                                      row.key,
-                                      color.key,
-                                      {
-                                        name:
-                                          e
-                                            .target
-                                            .value,
-                                      }
-                                    )
-                                  }
-                                  className="h-10 w-full rounded-[12px] border border-[#eaded3] px-3 text-xs font-black outline-none"
-                                  placeholder="Rosado"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="mb-1 block text-[8px] font-black uppercase text-[#8b8078]">
-                                  Series
-                                </label>
-
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={
-                                    color.qty
-                                  }
-                                  onChange={(
-                                    e
-                                  ) =>
-                                    updateColor(
-                                      row.key,
-                                      color.key,
-                                      {
-                                        qty:
-                                          Number(
-                                            e
-                                              .target
-                                              .value
-                                          ),
-                                      }
-                                    )
-                                  }
-                                  className="h-10 w-full rounded-[12px] border border-[#eaded3] px-3 text-center text-xs font-black outline-none"
-                                />
-                              </div>
-
-                              <div className="flex items-end">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    removeColor(
-                                      row.key,
-                                      color.key
-                                    )
-                                  }
-                                  disabled={
-                                    row.colors
-                                      .length ===
-                                    1
-                                  }
-                                  className="grid size-10 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c] disabled:opacity-25"
-                                >
-                                  <Trash2
-                                    size={
-                                      13
-                                    }
-                                  />
-                                </button>
-                              </div>
-                            </div>
-                          )
                         )}
                       </div>
+                    </details>
 
-                      <div className="mt-3 rounded-[18px] bg-[#f4faf8] px-4 py-3">
-                        <p className="text-[9px] font-bold leading-5 text-[#64847f]">
-                          {colorFormula ||
-                            "Agrega color y cantidad"}
-                        </p>
+                    <div className="mt-4 flex gap-2">
+                      <input
+                        value={
+                          customSizes[
+                            row.key
+                          ] ?? ""
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          setCustomSizes(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              [row.key]:
+                                e.target
+                                  .value,
+                            })
+                          )
+                        }
+                        className="ti-input"
+                        placeholder="Otra talla"
+                      />
 
-                        <p className="mt-1 text-sm font-black text-[#42746e]">
-                          ={" "}
-                          {
-                            row.totalSeries
-                          }{" "}
-                          series
-                        </p>
-
-                        <p className="mt-1 text-[10px] font-black text-[#42746e]">
-                          {
-                            row.totalSeries
-                          }{" "}
-                          series ×{" "}
-                          {
-                            row.pieces
-                          }{" "}
-                          tallas ={" "}
-                          {row.totalSeries *
-                            row.pieces}{" "}
-                          prendas
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          addCustomSize(
+                            row.key
+                          )
+                        }
+                        className="grid min-w-12 place-items-center rounded-[16px] bg-[#f4faf8] text-[#42746e]"
+                      >
+                        <Plus
+                          size={16}
+                        />
+                      </button>
                     </div>
 
-                    {/* COSTOS */}
-                    <div className="mt-5">
-                      <div className="flex flex-wrap items-end justify-between gap-2">
-                        <div>
-                          <p className="text-xs font-black">
-                            Costo de este modelo
-                          </p>
-
-                          <p className="mt-1 text-[9px] leading-4 text-[#8b8078]">
-                            Ingresa cuánto cobra el proveedor por UNA serie de este modelo.
-                          </p>
-                        </div>
-
-                        <span className="rounded-full bg-[#f7f2ec] px-3 py-1.5 text-[9px] font-black text-[#6f655e]">
-                          {row.totalSeries} series · {row.totalPiecesRow} prendas
-                        </span>
-                      </div>
-
-                      <div className="mt-3">
-                        <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
-                          Precio proveedor / serie ({currency})
-                        </label>
-
-                        <div className="flex overflow-hidden rounded-[16px] border border-[#eaded3] bg-white">
-                          <span className="grid min-w-11 place-items-center bg-[#f8f4f0] text-xs font-black text-[#8f3a2e]">
-                            {selectedCurrencySymbol}
-                          </span>
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={row.supplier_cost_series}
-                            onChange={(e) =>
-                              updateRow(
-                                row.key,
-                                {
-                                  supplier_cost_series:
-                                    Number(
-                                      e.target.value
-                                    ),
-                                }
-                              )
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {row.sizes.map(
+                        (
+                          size
+                        ) => (
+                          <span
+                            key={
+                              size
                             }
-                            className="h-12 min-w-0 flex-1 border-0 px-3 text-base font-black outline-none"
-                            placeholder="0.00"
-                          />
-                        </div>
+                            className="inline-flex items-center gap-1 rounded-full bg-[#f7f2ec] px-3 py-1.5 text-[9px] font-black"
+                          >
+                            {size}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleSize(
+                                  row.key,
+                                  size
+                                )
+                              }
+                            >
+                              <X
+                                size={10}
+                              />
+                            </button>
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black">
+                          Colores
+                        </p>
+
+                        <p className="mt-1 text-[9px] text-[#8b8078]">
+                          Indica cuántas series completas compró de cada color.
+                        </p>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        <div className="rounded-[15px] bg-[#f8f4f0] p-3">
-                          <p className="text-[8px] font-black uppercase text-[#8b8078]">
-                            Proveedor / prenda
-                          </p>
-
-                          <p className="mt-1 text-xs font-black">
-                            {moneyOriginal(row.supplierCostPieceOriginal)}
-                          </p>
-
-                          <p className="mt-1 text-[9px] font-bold text-[#7f746c]">
-                            {money(row.supplierCostPiecePen)}
-                          </p>
-                        </div>
-
-                        <div className="rounded-[15px] bg-[#f8f4f0] p-3">
-                          <p className="text-[8px] font-black uppercase text-[#8b8078]">
-                            Subtotal modelo
-                          </p>
-
-                          <p className="mt-1 text-xs font-black">
-                            {moneyOriginal(row.supplierSubtotalOriginal)}
-                          </p>
-
-                          <p className="mt-1 text-[9px] font-bold text-[#7f746c]">
-                            {money(row.supplierSubtotalPen)}
-                          </p>
-                        </div>
-
-                        <div className="col-span-2 rounded-[15px] bg-[#fff8e9] p-3 sm:col-span-1">
-                          <p className="text-[8px] font-black uppercase text-[#9b6510]">
-                            Gastos extra / prenda
-                          </p>
-
-                          <p className="mt-1 text-xs font-black text-[#9b6510]">
-                            {moneyOriginal(row.extraPerPieceOriginal)}
-                          </p>
-
-                          <p className="mt-1 text-[9px] font-bold text-[#9b7b48]">
-                            {money(row.extraPerPiecePen)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <div className="rounded-[17px] bg-[#edf7f5] p-3.5">
-                          <p className="text-[8px] font-black uppercase text-[#42746e]">
-                            Costo final / prenda
-                          </p>
-
-                          <p className="mt-1 text-sm font-black text-[#42746e]">
-                            {moneyOriginal(row.landedPieceOriginal)}
-                          </p>
-
-                          <p className="mt-1 text-xs font-black text-[#42746e]">
-                            {money(row.landedPiecePen)}
-                          </p>
-                        </div>
-
-                        <div className="rounded-[17px] bg-[#e7f2ef] p-3.5">
-                          <p className="text-[8px] font-black uppercase text-[#356a64]">
-                            Costo final / serie
-                          </p>
-
-                          <p className="mt-1 text-sm font-black text-[#356a64]">
-                            {moneyOriginal(row.landedSeriesOriginal)}
-                          </p>
-
-                          <p className="mt-1 text-xs font-black text-[#356a64]">
-                            {money(row.landedSeriesPen)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-2 rounded-[14px] bg-[#fffdfb] px-3 py-2 text-[9px] leading-4 text-[#7f746c]">
-                        A este modelo se le asignan {money(row.allocated)} de gastos porque tiene {row.totalPiecesRow} prendas. Todos reciben el mismo gasto extra por prenda.
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          addColor(
+                            row.key
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-full bg-[#fff6e9] px-3 py-2 text-[9px] font-black text-[#9b6510]"
+                      >
+                        <Plus
+                          size={12}
+                        />
+                        Otro color
+                      </button>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="mt-3 space-y-2">
+                      {row.colors.map(
+                        (
+                          color,
+                          colorIndex
+                        ) => (
+                          <div
+                            key={
+                              color.key
+                            }
+                            className="grid grid-cols-[1fr_105px_auto] gap-2 rounded-[15px] border border-[#eaded3] p-2.5"
+                          >
+                            <input
+                              value={
+                                color.name
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                updateColor(
+                                  row.key,
+                                  color.key,
+                                  {
+                                    name:
+                                      e.target
+                                        .value,
+                                  }
+                                )
+                              }
+                              className="h-10 min-w-0 rounded-[12px] border border-[#eaded3] px-3 text-xs font-black outline-none"
+                              placeholder={`Color ${colorIndex + 1}`}
+                            />
+
+                            <input
+                              type="number"
+                              value={
+                                color.qty
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                updateColor(
+                                  row.key,
+                                  color.key,
+                                  {
+                                    qty:
+                                      e.target
+                                        .value,
+                                  }
+                                )
+                              }
+                              min="1"
+                              step="1"
+                              className="h-10 w-full rounded-[12px] border border-[#eaded3] px-3 text-center text-xs font-black outline-none"
+                              placeholder="Series"
+                            />
+
+                            <button
+                              type="button"
+                              disabled={
+                                row.colors
+                                  .length ===
+                                1
+                              }
+                              onClick={() =>
+                                removeColor(
+                                  row.key,
+                                  color.key
+                                )
+                              }
+                              className="grid size-10 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c] disabled:opacity-25"
+                            >
+                              <Trash2
+                                size={13}
+                              />
+                            </button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-[20px] bg-[#fff7f1] p-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
                       <div>
-                        <label className="mb-2 block text-[9px] font-black uppercase text-[#9b6510]">
-                          Precio preventa
+                        <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                          Costo proveedor / prenda {currency}
                         </label>
 
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                        <NumberInput
                           value={
-                            row.preorder_price
+                            row.supplier_cost_piece_original
                           }
                           onChange={(
-                            e
+                            value
                           ) =>
                             updateRow(
                               row.key,
                               {
-                                preorder_price:
-                                  Number(
-                                    e
-                                      .target
-                                      .value
-                                  ),
+                                supplier_cost_piece_original:
+                                  value,
                               }
                             )
                           }
-                          className="ti-input bg-[#fffaf0]"
+                          placeholder={
+                            currency ===
+                            "USD"
+                              ? "Ej. 8.00"
+                              : "Costo"
+                          }
+                          min={0}
                         />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-[9px] font-black uppercase text-[#9b6510]">
+                          Utilidad preventa %
+                        </label>
+
+                        <NumberInput
+                          value={
+                            row.preorder_margin_pct
+                          }
+                          onChange={(
+                            value
+                          ) =>
+                            updateRow(
+                              row.key,
+                              {
+                                preorder_margin_pct:
+                                  value,
+                                preorder_manual:
+                                  false,
+                              }
+                            )
+                          }
+                          min={20}
+                          step="1"
+                        />
+
+                        <p className="mt-1 text-[8px] text-[#8b8078]">
+                          Mínimo 20%
+                        </p>
                       </div>
 
                       <div>
                         <label className="mb-2 block text-[9px] font-black uppercase text-[#9b382b]">
-                          Precio stock
+                          Utilidad stock %
                         </label>
 
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                        <NumberInput
                           value={
-                            row.stock_price
+                            row.stock_margin_pct
                           }
                           onChange={(
-                            e
+                            value
                           ) =>
                             updateRow(
                               row.key,
                               {
-                                stock_price:
-                                  Number(
-                                    e
-                                      .target
-                                      .value
-                                  ),
+                                stock_margin_pct:
+                                  value,
+                                stock_manual:
+                                  false,
                               }
                             )
                           }
-                          className="ti-input bg-[#fff4ef]"
+                          min={20}
+                          step="1"
                         />
+
+                        <p className="mt-1 text-[8px] text-[#8b8078]">
+                          Mínimo 20%
+                        </p>
                       </div>
                     </div>
+
+                    {effectiveRate >
+                      0 &&
+                      row.providerPieceOriginal >
+                        0 &&
+                      row.pieces >
+                        0 && (
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-2 block text-[9px] font-black uppercase text-[#9b6510]">
+                            Precio preventa / serie
+                          </label>
+
+                          <NumberInput
+                            value={
+                              row.preorder_manual
+                                ? row.preorder_price
+                                : row.suggestedPreorder.toFixed(
+                                    2
+                                  )
+                            }
+                            onChange={(
+                              value
+                            ) =>
+                              updateRow(
+                                row.key,
+                                {
+                                  preorder_price:
+                                    value,
+                                  preorder_manual:
+                                    true,
+                                }
+                              )
+                            }
+                            min={0}
+                            className={
+                              row.preorderActualMargin +
+                                0.01 <
+                              row.preorderMargin
+                                ? "border-red-300 bg-red-50"
+                                : "bg-[#fffaf0]"
+                            }
+                          />
+
+                          <p className="mt-1 text-[8px] text-[#8b8078]">
+                            Sugerido con {row.preorderMargin.toFixed(0)}%
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-[9px] font-black uppercase text-[#9b382b]">
+                            Precio stock / serie
+                          </label>
+
+                          <NumberInput
+                            value={
+                              row.stock_manual
+                                ? row.stock_price
+                                : row.suggestedStock.toFixed(
+                                    2
+                                  )
+                            }
+                            onChange={(
+                              value
+                            ) =>
+                              updateRow(
+                                row.key,
+                                {
+                                  stock_price:
+                                    value,
+                                  stock_manual:
+                                    true,
+                                }
+                              )
+                            }
+                            min={0}
+                            className={
+                              row.stockActualMargin +
+                                0.01 <
+                              row.stockMargin
+                                ? "border-red-300 bg-red-50"
+                                : "bg-[#fff4ef]"
+                            }
+                          />
+
+                          <p className="mt-1 text-[8px] text-[#8b8078]">
+                            Sugerido con {row.stockMargin.toFixed(0)}%
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </article>
-              );
-            }
+                </div>
+              </article>
+            )
           )}
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <div className="rounded-[20px] bg-white p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Proveedor
-          </p>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
+              Gastos de la carga
+            </p>
 
-          <p className="mt-2 text-lg font-black">
-            {moneyOriginal(declaredSupplierTotalOriginal)}
-          </p>
+            <h2 className="mt-1 text-2xl font-black">
+              Flete, impuestos y otros
+            </h2>
 
-          <p className="mt-1 text-[9px] font-bold text-[#7f746c]">
-            {money(declaredSupplierTotalPen)}
-          </p>
+            <p className="mt-1 text-xs leading-5 text-[#7f746c]">
+              Puedes mezclar gastos en
+              dólares y soles. Todos se
+              reparten entre las prendas.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setExpenses(
+                (
+                  current
+                ) => [
+                  ...current,
+                  newExpense(),
+                ]
+              )
+            }
+            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fff6e9] px-4 text-xs font-black text-[#9b6510]"
+          >
+            <Plus
+              size={14}
+            />
+            Agregar gasto
+          </button>
         </div>
 
-        <div className="rounded-[20px] bg-white p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Gastos extra
-          </p>
+        {expenses.length ===
+          0 ? (
+          <button
+            type="button"
+            onClick={() =>
+              setExpenses([
+                newExpense(),
+              ])
+            }
+            className="flex min-h-24 w-full items-center justify-center gap-2 rounded-[22px] border border-dashed border-[#d9c8bb] bg-white text-xs font-black text-[#8b8078]"
+          >
+            <ReceiptText
+              size={16}
+            />
+            Agregar primer gasto
+          </button>
+        ) : (
+          <div className="space-y-3">
+            {expenses.map(
+              (
+                expense,
+                index
+              ) => {
+                const rate =
+                  expense.currency ===
+                  "PEN"
+                    ? 1
+                    : n(
+                        expense.exchange_rate
+                      ) ||
+                      effectiveRate;
 
-          <p className="mt-2 text-lg font-black text-[#d39218]">
-            {money(extraTotal)}
-          </p>
+                const converted =
+                  n(
+                    expense.amount
+                  ) *
+                  rate;
 
-          <p className="mt-1 text-[9px] font-bold text-[#9b7b48]">
-            {moneyOriginal(
-              safeExchangeRate > 0
-                ? extraTotal / safeExchangeRate
-                : 0
+                return (
+                  <article
+                    key={
+                      expense.key
+                    }
+                    className="rounded-[22px] border border-[#eaded3] bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-black">
+                        Gasto {index + 1}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpenses(
+                            (
+                              current
+                            ) =>
+                              current.filter(
+                                (
+                                  item
+                                ) =>
+                                  item.key !==
+                                  expense.key
+                              )
+                          )
+                        }
+                        className="grid size-9 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c]"
+                      >
+                        <Trash2
+                          size={13}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                      <input
+                        type="date"
+                        value={
+                          expense.expense_date
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updateExpense(
+                            expense.key,
+                            {
+                              expense_date:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                      />
+
+                      <select
+                        value={
+                          expense.concept
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updateExpense(
+                            expense.key,
+                            {
+                              concept:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                      >
+                        <option>
+                          Flete
+                        </option>
+                        <option>
+                          Impuestos
+                        </option>
+                        <option>
+                          Comisión
+                        </option>
+                        <option>
+                          Transporte
+                        </option>
+                        <option>
+                          Aduana
+                        </option>
+                        <option>
+                          Otro
+                        </option>
+                      </select>
+
+                      <select
+                        value={
+                          expense.currency
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updateExpense(
+                            expense.key,
+                            {
+                              currency:
+                                e.target
+                                  .value as Currency,
+
+                              exchange_rate:
+                                e.target
+                                  .value ===
+                                "PEN"
+                                  ? ""
+                                  : expense.exchange_rate,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                      >
+                        <option value="USD">
+                          USD
+                        </option>
+                        <option value="PEN">
+                          PEN
+                        </option>
+                        <option value="CNY">
+                          CNY
+                        </option>
+                      </select>
+
+                      <NumberInput
+                        value={
+                          expense.amount
+                        }
+                        onChange={(
+                          value
+                        ) =>
+                          updateExpense(
+                            expense.key,
+                            {
+                              amount:
+                                value,
+                            }
+                          )
+                        }
+                        placeholder="Monto"
+                        min={0}
+                      />
+
+                      {expense.currency !==
+                      "PEN" ? (
+                        <NumberInput
+                          value={
+                            expense.exchange_rate
+                          }
+                          onChange={(
+                            value
+                          ) =>
+                            updateExpense(
+                              expense.key,
+                              {
+                                exchange_rate:
+                                  value,
+                              }
+                            )
+                          }
+                          placeholder="T. cambio"
+                          min={0}
+                          step="0.0001"
+                        />
+                      ) : (
+                        <div className="hidden xl:block" />
+                      )}
+
+                      <input
+                        value={
+                          expense.reference
+                        }
+                        onChange={(
+                          e
+                        ) =>
+                          updateExpense(
+                            expense.key,
+                            {
+                              reference:
+                                e.target
+                                  .value,
+                            }
+                          )
+                        }
+                        className="ti-input"
+                        placeholder="Referencia"
+                      />
+                    </div>
+
+                    {n(
+                      expense.amount
+                    ) >
+                      0 &&
+                      rate >
+                        0 && (
+                      <p className="mt-2 text-right text-[9px] font-black text-[#9b6510]">
+                        Equivale a {moneyPen(
+                          converted
+                        )}
+                      </p>
+                    )}
+                  </article>
+                );
+              }
             )}
-          </p>
-        </div>
-
-        <div className="col-span-2 rounded-[20px] bg-[#8f3a2e] p-4 text-white shadow-sm lg:col-span-1">
-          <p className="text-[9px] font-black uppercase text-white/70">
-            Costo total importado
-          </p>
-
-          <p className="mt-2 text-xl font-black">
-            {money(totalPaidPen)}
-          </p>
-
-          <p className="mt-1 text-[9px] font-bold text-white/75">
-            {moneyOriginal(totalPaidOriginal)}
-          </p>
-        </div>
-
-        <div className="rounded-[20px] bg-[#fff8e9] p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#9b6510]">
-            Extra por prenda
-          </p>
-
-          <p className="mt-2 text-lg font-black text-[#9b6510]">
-            {money(extraPerPiecePen)}
-          </p>
-
-          <p className="mt-1 text-[9px] font-bold text-[#9b7b48]">
-            {moneyOriginal(extraPerPieceOriginal)}
-          </p>
-        </div>
-
-        <div className="rounded-[20px] bg-white p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Series
-          </p>
-
-          <p className="mt-2 text-lg font-black text-[#5a8b86]">
-            {totalSeries}
-          </p>
-        </div>
-
-        <div className="rounded-[20px] bg-white p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Prendas
-          </p>
-
-          <p className="mt-2 text-lg font-black text-[#5a8b86]">
-            {totalPieces}
-          </p>
-        </div>
+          </div>
+        )}
       </section>
 
-      {!supplierBalanced && (
-        <div className="rounded-[18px] border border-[#f0d4ca] bg-[#fff4ef] p-4 text-xs font-bold text-[#a33d31]">
-          Para guardar, el total pagado al proveedor debe coincidir con la suma de los precios de todos los modelos. Diferencia actual: {moneyOriginal(supplierDifferenceOriginal)}.
-        </div>
+      {allPieces >
+        0 &&
+        effectiveRate >
+          0 && (
+        <section className="space-y-4">
+          <div className="rounded-[28px] bg-[#8f3a2e] p-5 text-white shadow-sm">
+            <div className="flex items-start gap-3">
+              <WalletCards
+                size={20}
+              />
+
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[.16em] text-white/70">
+                  Resumen de la carga
+                </p>
+
+                <h2 className="mt-1 text-2xl font-black">
+                  Costo final
+                </h2>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+              <div className="rounded-[16px] bg-white/10 p-3">
+                <p className="text-[8px] font-black uppercase text-white/70">
+                  Series
+                </p>
+                <p className="mt-1 text-xl font-black">
+                  {allSeries}
+                </p>
+              </div>
+
+              <div className="rounded-[16px] bg-white/10 p-3">
+                <p className="text-[8px] font-black uppercase text-white/70">
+                  Prendas
+                </p>
+                <p className="mt-1 text-xl font-black">
+                  {allPieces}
+                </p>
+              </div>
+
+              <div className="rounded-[16px] bg-white/10 p-3">
+                <p className="text-[8px] font-black uppercase text-white/70">
+                  Mercadería
+                </p>
+                <p className="mt-1 text-sm font-black">
+                  {moneyOriginal(
+                    supplierValueOriginal,
+                    currency
+                  )}
+                </p>
+                <p className="mt-1 text-[9px]">
+                  {moneyPen(
+                    supplierValuePen
+                  )}
+                </p>
+              </div>
+
+              <div className="rounded-[16px] bg-white/10 p-3">
+                <p className="text-[8px] font-black uppercase text-white/70">
+                  Gastos
+                </p>
+                <p className="mt-1 text-sm font-black">
+                  {moneyPen(
+                    expensesTotalPen
+                  )}
+                </p>
+                <p className="mt-1 text-[9px]">
+                  {moneyPen(
+                    extraPerPiecePen
+                  )} / prenda
+                </p>
+              </div>
+
+              <div className="col-span-2 rounded-[16px] bg-white p-3 text-[#8f3a2e] lg:col-span-1">
+                <p className="text-[8px] font-black uppercase">
+                  Pagado proveedor
+                </p>
+                <p className="mt-1 text-sm font-black">
+                  {moneyOriginal(
+                    paymentsTotalOriginal,
+                    currency
+                  )}
+                </p>
+                <p className="mt-1 text-[9px]">
+                  Saldo: {moneyOriginal(
+                    Math.max(
+                      supplierBalanceOriginal,
+                      0
+                    ),
+                    currency
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
+              Resultado por modelo
+            </p>
+
+            <p className="mt-1 text-xs text-[#7f746c]">
+              Aquí recién ves todos
+              los costos finales y
+              los precios sugeridos.
+            </p>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            {detailed.map(
+              (
+                row,
+                index
+              ) => (
+                <article
+                  key={
+                    row.key
+                  }
+                  className="rounded-[24px] border border-[#eaded3] bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="size-16 shrink-0 overflow-hidden rounded-[14px] bg-[#f1e9e1]">
+                      {row.cover_url ? (
+                        <img
+                          src={
+                            row.cover_url
+                          }
+                          alt={
+                            row.name
+                          }
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center">
+                          <ImagePlus
+                            size={18}
+                            className="text-[#bda99b]"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black uppercase text-[#5a8b86]">
+                        {row.mode ===
+                        "EXISTING"
+                          ? row.existing
+                              ?.code
+                          : `Código automático ${index + 1}`}
+                      </p>
+
+                      <h3 className="mt-1 truncate font-black">
+                        {row.name ||
+                          row.existing
+                            ?.name ||
+                          "Modelo"}
+                      </h3>
+
+                      <p className="mt-1 text-[9px] text-[#8b8078]">
+                        {row.totalSeries} series · {row.totalPieces} prendas
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-[14px] bg-[#f8f4f0] p-3">
+                      <p className="text-[7px] font-black uppercase text-[#8b8078]">
+                        Proveedor / prenda
+                      </p>
+
+                      <p className="mt-1 text-xs font-black">
+                        {moneyOriginal(
+                          row.providerPieceOriginal,
+                          currency
+                        )}
+                      </p>
+
+                      <p className="mt-1 text-[9px] text-[#7f746c]">
+                        {moneyPen(
+                          row.providerPiecePen
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[14px] bg-[#fff8e9] p-3">
+                      <p className="text-[7px] font-black uppercase text-[#9b6510]">
+                        Gasto / prenda
+                      </p>
+
+                      <p className="mt-1 text-xs font-black text-[#9b6510]">
+                        {moneyPen(
+                          extraPerPiecePen
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[14px] bg-[#edf7f5] p-3">
+                      <p className="text-[7px] font-black uppercase text-[#42746e]">
+                        Costo final / prenda
+                      </p>
+
+                      <p className="mt-1 text-xs font-black text-[#42746e]">
+                        {moneyPen(
+                          row.finalPiecePen
+                        )}
+                      </p>
+
+                      <p className="mt-1 text-[9px] text-[#64847f]">
+                        {moneyOriginal(
+                          row.finalPieceOriginal,
+                          currency
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[14px] bg-[#edf7f5] p-3">
+                      <p className="text-[7px] font-black uppercase text-[#42746e]">
+                        Costo final / serie
+                      </p>
+
+                      <p className="mt-1 text-xs font-black text-[#42746e]">
+                        {moneyPen(
+                          row.finalSeriesPen
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-[14px] border border-[#f0d9a8] bg-[#fffaf0] p-3">
+                      <p className="text-[7px] font-black uppercase text-[#9b6510]">
+                        Preventa
+                      </p>
+
+                      <p className="mt-1 text-sm font-black text-[#9b6510]">
+                        {moneyPen(
+                          row.preorderFinal
+                        )}
+                      </p>
+
+                      <p className="mt-1 text-[8px] text-[#8b8078]">
+                        Utilidad/prenda {moneyPen(
+                          row.preorderProfitPiece
+                        )} · {row.preorderActualMargin.toFixed(
+                          1
+                        )}%
+                      </p>
+                    </div>
+
+                    <div className="rounded-[14px] border border-[#f2cfc4] bg-[#fff4ef] p-3">
+                      <p className="text-[7px] font-black uppercase text-[#9b382b]">
+                        Stock
+                      </p>
+
+                      <p className="mt-1 text-sm font-black text-[#9b382b]">
+                        {moneyPen(
+                          row.stockFinal
+                        )}
+                      </p>
+
+                      <p className="mt-1 text-[8px] text-[#8b8078]">
+                        Utilidad/prenda {moneyPen(
+                          row.stockProfitPiece
+                        )} · {row.stockActualMargin.toFixed(
+                          1
+                        )}%
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              )
+            )}
+          </div>
+        </section>
       )}
 
       <section className="rounded-[22px] border border-[#eaded3] bg-white p-4">
@@ -2592,9 +3526,12 @@ export function ChinaPurchaseForm({
           value={
             notes
           }
-          onChange={(e) =>
+          onChange={(
+            e
+          ) =>
             setNotes(
-              e.target.value
+              e.target
+                .value
             )
           }
           className="ti-input min-h-20 py-3"
@@ -2602,19 +3539,27 @@ export function ChinaPurchaseForm({
         />
       </section>
 
+      {!pricesValid &&
+        allPieces >
+          0 && (
+        <div className="rounded-[18px] bg-[#fff0eb] p-4 text-xs font-bold text-[#a33d31]">
+          Hay un precio por debajo
+          del margen mínimo indicado.
+          Ajusta el precio antes de
+          guardar.
+        </div>
+      )}
+
       <button
         disabled={
-          !canSubmit ||
-          uploadingKey !==
-            null
+          !canSubmit
         }
-        className="flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#b63a2c] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(182,58,44,.18)] disabled:opacity-40"
+        className="flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#b63a2c] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(182,58,44,.18)] disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Save
           size={18}
         />
-
-        Guardar compra y crear códigos
+        Guardar toda la compra
       </button>
     </form>
   );

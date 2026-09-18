@@ -20,9 +20,13 @@ export default async function NewChinaPurchasePage() {
   const supabase =
     await createClient();
 
-  const { data } =
+  const {
+    data,
+  } =
     await supabase
-      .from("series_products")
+      .from(
+        "series_products"
+      )
       .select(`
         id,
         code,
@@ -33,8 +37,13 @@ export default async function NewChinaPurchasePage() {
         price_stock,
         cover_url
       `)
-      .eq("active", true)
-      .order("code");
+      .eq(
+        "active",
+        true
+      )
+      .order(
+        "code"
+      );
 
   return (
     <div className="space-y-6">
@@ -66,10 +75,13 @@ export default async function NewChinaPurchasePage() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-xs leading-5 text-[#7f746c] sm:text-sm sm:leading-6">
-              Registra cada modelo,
-              agrega sus colores uno por
-              uno y sube su foto portada.
-              El código TI se genera solo.
+              Registra los modelos,
+              los pagos al proveedor
+              y los gastos de la carga.
+              El sistema reparte los
+              gastos entre todas las
+              prendas y calcula el
+              costo final automáticamente.
             </p>
           </div>
         </div>
@@ -77,23 +89,24 @@ export default async function NewChinaPurchasePage() {
 
       <ChinaPurchaseForm
         products={
-          (data ?? []).map(
-            (item) => ({
-              ...item,
+          (data ?? [])
+            .map(
+              (item) => ({
+                ...item,
 
-              price_preorder:
-                Number(
-                  item.price_preorder ??
-                    0
-                ),
+                price_preorder:
+                  Number(
+                    item.price_preorder ??
+                      0
+                  ),
 
-              price_stock:
-                Number(
-                  item.price_stock ??
-                    0
-                ),
-            })
-          ) as any
+                price_stock:
+                  Number(
+                    item.price_stock ??
+                      0
+                  ),
+              })
+            ) as any
         }
       />
     </div>
