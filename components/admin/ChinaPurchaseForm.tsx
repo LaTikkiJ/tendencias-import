@@ -413,7 +413,7 @@ export function ChinaPurchaseForm({
 
       return {
         ...expense,
-        amount,
+        amountNumber: amount,
         rate,
         amountPen: amount * rate,
       };
@@ -666,7 +666,7 @@ export function ChinaPurchaseForm({
     );
 
   const expensesValid = expenseSummary.every(
-    (expense) => expense.amount <= 0 || expense.currency === "PEN" || expense.rate > 0,
+    (expense) => expense.amountNumber <= 0 || expense.currency === "PEN" || expense.rate > 0,
   );
 
   const pricesValid = detailedModels.every(
@@ -707,13 +707,13 @@ export function ChinaPurchaseForm({
       })),
 
     expenses: expenseSummary
-      .filter((expense) => expense.amount > 0)
+      .filter((expense) => expense.amountNumber > 0)
       .map((expense) => ({
         expense_date: expense.expense_date,
         category: expense.category,
         concept: expense.concept.trim(),
         currency: expense.currency,
-        amount: expense.amount,
+        amount: expense.amountNumber,
         exchange_rate: expense.rate,
         reference: expense.reference.trim(),
       })),
@@ -1431,7 +1431,7 @@ export function ChinaPurchaseForm({
                     placeholder="Referencia"
                     className="ti-input"
                   />
-                  {expense.amount > 0 && expense.rate > 0 && (
+                  {expense.amountNumber > 0 && expense.rate > 0 && (
                     <div className="rounded-[14px] bg-[#fff8e9] px-4 py-3 text-right">
                       <p className="text-[8px] font-black uppercase text-[#9b6510]">Convertido</p>
                       <p className="mt-1 text-xs font-black text-[#9b6510]">
