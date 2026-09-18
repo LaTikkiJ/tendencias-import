@@ -1,297 +1,245 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
-
 import {
   ArrowRight,
+  CalendarDays,
+  PackageOpen,
   Plus,
   Ship,
   WalletCards,
 } from "lucide-react";
 
-import {
-  createClient,
-} from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
-export const dynamic =
-  "force-dynamic";
+export const dynamic = "force-dynamic";
 
-function money(
-  value:
-    | number
-    | string
-    | null
-) {
-  return `S/ ${Number(
-    value ?? 0
-  ).toFixed(2)}`;
+function pen(value: unknown) {
+  return new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    minimumFractionDigits: 2,
+  }).format(Number(value ?? 0) || 0);
 }
 
-function label(
-  status: string
-) {
-  if (
-    status ===
-    "RECIBIDO"
-  ) {
-    return "Recibido";
-  }
+function original(value: unknown, currency: string) {
+  if (currency === "PEN") return pen(value);
 
-  if (
-    status ===
-    "EN_TRANSITO"
-  ) {
-    return "En tránsito";
-  }
+  return `${currency} ${new Intl.NumberFormat("es-PE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value ?? 0) || 0)}`;
+}
 
-  if (
-    status ===
-    "CANCELADO"
-  ) {
-    return "Cancelado";
-  }
+function statusName(status: string) {
+  if (status === "PEDIDO") return "Pedido";
+  if (status === "EN_TRANSITO") return "En tránsito";
+  if (status === "RECIBIDO") return "Recibido";
+  if (status === "CANCELADO") return "Cancelado";
+  return status;
+}
 
-  return "Pedido";
+function statusClass(status: string) {
+  if (status === "RECIBIDO") return "bg-[#edf7f5] text-[#42746e]";
+  if (status === "EN_TRANSITO") return "bg-[#fff8e9] text-[#9b6510]";
+  if (status === "CANCELADO") return "bg-[#fff0eb] text-[#a33d31]";
+  return "bg-[#f7f2ec] text-[#6f655e]";
 }
 
 export default async function ChinaPurchasesPage() {
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
-  const { data } =
-    await supabase
-      .from(
-        "series_china_purchases"
-      )
-      .select("*")
-      .order(
-        "purchase_date",
-        {
-          ascending:
-            false,
-        }
-      )
-      .order(
-        "created_at",
-        {
-          ascending:
-            false,
-        }
-      );
+  const { data } = await supabase
+    .from("series_china_purchases")
+    .select(`
+      id,
+      code,
+      purchase_date,
+      supplier,
+      currency,
+      supplier_total_original,
+      supplier_total_pen,
+      garments_paid_original,
+      payments_total_pen,
+      distributable_costs_pen,
+      total_paid,
+      total_series,
+      total_pieces,
+      effective_exchange_rate,
+      status,
+      created_at
+    `)
+    .order("created_at", { ascending: false });
 
-  const purchases =
-    data ?? [];
+  const purchases = data ?? [];
+
+  const active = purchases.filter((item) => item.status !== "CANCELADO");
+  const totalInvestment = active.reduce(
+    (sum, item) => sum + Number(item.total_paid ?? 0),
+    0,
+  );
+  const inTransit = active.filter((item) => item.status === "EN_TRANSITO").length;
+  const totalPieces = active.reduce(
+    (sum, item) => sum + Number(item.total_pieces ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[30px] border border-[#eaded3] bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="rounded-[30px] border border-[#eaded3] bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.18em] text-[#5a8b86]">
-              Series
+            <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#5a8b86]">
+              Series · Compras China
             </p>
-
-            <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
-              Compras China
+            <h1 className="mt-2 text-3xl font-black tracking-[-.04em] sm:text-4xl">
+              Cargas de China
             </h1>
-
-            <p className="mt-2 max-w-2xl text-sm text-[#7f746c]">
-              Primero se registra
-              aquí la carga. Desde
-              cada compra se crean
-              los códigos que luego
-              aparecen en Series.
+            <p className="mt-2 max-w-2xl text-xs leading-5 text-[#7f746c] sm:text-sm sm:leading-6">
+              Lleva el mismo control que en MAKEK: pagos por etapas, tipo de cambio por pago,
+              gastos reales y costo final por modelo.
             </p>
           </div>
 
           <Link
             href="/admin/series/compras/nueva"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-[#b63a2c] px-5 text-sm font-black text-white"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[17px] bg-[#b63a2c] px-5 text-sm font-black text-white"
           >
-            <Plus
-              size={17}
-            />
-
-            Nueva compra
+            <Plus size={17} />
+            Nueva carga
           </Link>
         </div>
-      </section>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[22px] bg-white p-4 shadow-sm">
-          <Ship
-            size={18}
-            className="text-[#d39218]"
-          />
-
-          <p className="mt-3 text-[9px] font-black uppercase text-[#8b8078]">
-            En tránsito
-          </p>
-
-          <p className="mt-1 text-2xl font-black">
-            {
-              purchases.filter(
-                (item) =>
-                  item.status ===
-                  "EN_TRANSITO"
-              ).length
-            }
-          </p>
-        </div>
-
-        <div className="rounded-[22px] bg-white p-4 shadow-sm">
-          <WalletCards
-            size={18}
-            className="text-[#b63a2c]"
-          />
-
-          <p className="mt-3 text-[9px] font-black uppercase text-[#8b8078]">
-            Total invertido
-          </p>
-
-          <p className="mt-1 text-2xl font-black text-[#b63a2c]">
-            {money(
-              purchases
-                .filter(
-                  (item) =>
-                    item.status !==
-                    "CANCELADO"
-                )
-                .reduce(
-                  (
-                    sum,
-                    item
-                  ) =>
-                    sum +
-                    Number(
-                      item.total_paid ??
-                        0
-                    ),
-                  0
-                )
-            )}
-          </p>
-        </div>
-
-        <div className="rounded-[22px] bg-white p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Compras
-          </p>
-
-          <p className="mt-4 text-2xl font-black text-[#5a8b86]">
-            {
-              purchases.length
-            }
-          </p>
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <TopCard icon={<PackageOpen size={16} />} label="Compras" value={String(active.length)} />
+          <TopCard icon={<Ship size={16} />} label="En tránsito" value={String(inTransit)} />
+          <TopCard icon={<WalletCards size={16} />} label="Inversión" value={pen(totalInvestment)} />
+          <TopCard icon={<PackageOpen size={16} />} label="Prendas" value={String(totalPieces)} />
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[28px] border border-[#eaded3] bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="min-w-[950px] w-full border-collapse">
-            <thead>
-              <tr className="bg-[#f8f4f0] text-left text-[9px] font-black uppercase tracking-[.08em] text-[#786d65]">
-                <th className="px-4 py-3">
-                  Compra
-                </th>
+      {purchases.length === 0 ? (
+        <section className="rounded-[28px] border border-dashed border-[#d9c8bb] bg-white p-10 text-center">
+          <PackageOpen size={30} className="mx-auto text-[#5a8b86]" />
+          <p className="mt-4 font-black">Todavía no hay cargas registradas</p>
+          <p className="mt-1 text-xs text-[#7f746c]">
+            Registra la primera compra para empezar el inventario de Series.
+          </p>
+          <Link
+            href="/admin/series/compras/nueva"
+            className="mt-5 inline-flex rounded-full bg-[#b63a2c] px-5 py-3 text-xs font-black text-white"
+          >
+            Crear primera carga
+          </Link>
+        </section>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+          {purchases.map((purchase) => {
+            const supplierTotal = Number(purchase.supplier_total_original ?? 0);
+            const paidGarments = Number(purchase.garments_paid_original ?? 0);
+            const balance = Math.max(supplierTotal - paidGarments, 0);
 
-                <th className="px-4 py-3">
-                  Fecha
-                </th>
+            return (
+              <Link
+                key={purchase.id}
+                href={`/admin/series/compras/${purchase.id}`}
+                className="group rounded-[26px] border border-[#eaded3] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[.13em] text-[#5a8b86]">
+                      {purchase.code}
+                    </p>
+                    <h2 className="mt-1 text-lg font-black">
+                      {purchase.supplier || "Proveedor China"}
+                    </h2>
+                    <p className="mt-1 inline-flex items-center gap-1 text-[10px] text-[#7f746c]">
+                      <CalendarDays size={11} />
+                      {purchase.purchase_date}
+                    </p>
+                  </div>
 
-                <th className="px-4 py-3">
-                  Proveedor
-                </th>
+                  <span className={`rounded-full px-3 py-1.5 text-[9px] font-black ${statusClass(purchase.status)}`}>
+                    {statusName(purchase.status)}
+                  </span>
+                </div>
 
-                <th className="px-4 py-3 text-center">
-                  Series
-                </th>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Metric label="Series" value={String(purchase.total_series ?? 0)} />
+                  <Metric label="Prendas" value={String(purchase.total_pieces ?? 0)} />
+                  <Metric
+                    label="Mercadería"
+                    value={original(purchase.supplier_total_original, purchase.currency)}
+                    detail={pen(purchase.supplier_total_pen)}
+                  />
+                  <Metric
+                    label="Gastos"
+                    value={pen(purchase.distributable_costs_pen)}
+                    detail={`TC ${Number(purchase.effective_exchange_rate ?? 1).toFixed(4)}`}
+                  />
+                </div>
 
-                <th className="px-4 py-3 text-center">
-                  Prendas
-                </th>
+                <div className="mt-3 rounded-[16px] bg-[#fff7f1] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[8px] font-black uppercase text-[#8f3a2e]">Saldo prendas</p>
+                      <p className="mt-1 text-xs font-black text-[#8f3a2e]">
+                        {original(balance, purchase.currency)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-black uppercase text-[#7f746c]">Costo total</p>
+                      <p className="mt-1 text-xs font-black">{pen(purchase.total_paid)}</p>
+                    </div>
+                  </div>
+                </div>
 
-                <th className="px-4 py-3">
-                  Total
-                </th>
-
-                <th className="px-4 py-3">
-                  Estado
-                </th>
-
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-
-            <tbody>
-              {purchases.map(
-                (item) => (
-                  <tr
-                    key={
-                      item.id
-                    }
-                    className="border-t border-[#f0e7df] text-sm"
-                  >
-                    <td className="px-4 py-3 font-black">
-                      {
-                        item.code
-                      }
-                    </td>
-
-                    <td className="px-4 py-3">
-                      {
-                        item.purchase_date
-                      }
-                    </td>
-
-                    <td className="px-4 py-3 font-bold">
-                      {item.supplier ||
-                        "—"}
-                    </td>
-
-                    <td className="px-4 py-3 text-center font-black">
-                      {
-                        item.total_series
-                      }
-                    </td>
-
-                    <td className="px-4 py-3 text-center font-black">
-                      {
-                        item.total_pieces
-                      }
-                    </td>
-
-                    <td className="px-4 py-3 font-black text-[#b63a2c]">
-                      {money(
-                        item.total_paid
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-[#f7f2ec] px-3 py-1.5 text-[10px] font-black">
-                        {label(
-                          item.status
-                        )}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/series/compras/${item.id}`}
-                        className="inline-flex size-9 items-center justify-center rounded-full bg-[#fff0e9] text-[#9b382b]"
-                      >
-                        <ArrowRight
-                          size={
-                            15
-                          }
-                        />
-                      </Link>
-                    </td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </table>
+                <div className="mt-4 flex items-center justify-end gap-1 text-[10px] font-black text-[#8f3a2e]">
+                  Abrir compra
+                  <ArrowRight size={13} className="transition group-hover:translate-x-0.5" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
-      </section>
+      )}
+    </div>
+  );
+}
+
+function TopCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[18px] bg-[#f8f4f0] p-3 sm:p-4">
+      <div className="flex items-center gap-2 text-[#5a8b86]">
+        {icon}
+        <p className="text-[8px] font-black uppercase tracking-[.08em]">{label}</p>
+      </div>
+      <p className="mt-2 text-lg font-black">{value}</p>
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+}) {
+  return (
+    <div className="rounded-[14px] bg-[#f8f4f0] p-3">
+      <p className="text-[7px] font-black uppercase text-[#8b8078]">{label}</p>
+      <p className="mt-1 text-xs font-black">{value}</p>
+      {detail && <p className="mt-1 text-[8px] text-[#7f746c]">{detail}</p>}
     </div>
   );
 }
