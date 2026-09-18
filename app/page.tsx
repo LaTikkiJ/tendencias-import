@@ -55,7 +55,8 @@ export default async function HomePage() {
       <Header />
 
       <main>
-        <section className="ti-container grid min-h-[620px] items-center gap-10 py-10 lg:grid-cols-[1.08fr_.92fr]">
+        {/* HERO */}
+        <section className="ti-container grid items-center gap-8 py-10 lg:min-h-[620px] lg:grid-cols-[1.08fr_.92fr]">
           <div>
             <span className="ti-pill">
               <Sparkles size={15} />
@@ -71,8 +72,8 @@ export default async function HomePage() {
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-8 text-[#6f655e]">
-              Explora Pacas Kids y Damas en preventa, o elige Series Kids
-              disponibles desde nuestra tienda.
+              Explora Pacas Kids y Damas en preventa, o elige
+              Series Kids disponibles desde nuestra tienda.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -93,23 +94,23 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="ti-card relative overflow-hidden p-5 md:p-8">
-            <div className="absolute right-0 top-0 size-40 rounded-full bg-[#c78316]/10 blur-2xl" />
-
-            <div className="relative mx-auto grid max-w-[560px] grid-cols-[1.18fr_.92fr] grid-rows-2 gap-3 sm:gap-4">
+          {/* MOSAICO PRINCIPAL: SIEMPRE 2 COLUMNAS, TAMBIÉN EN CELULAR */}
+          <div className="rounded-[28px] border border-[#eaded3] bg-white p-3 shadow-[0_12px_30px_rgba(67,47,34,.08)] sm:p-5">
+            <div className="grid grid-cols-[1.08fr_.92fr] grid-rows-2 gap-3">
               <Link
                 href="/pacas"
-                className="flex min-h-[290px] flex-col justify-between rounded-[28px] bg-[#b63a2c] p-5 text-white transition hover:-translate-y-1 sm:min-h-[360px] sm:p-7"
+                className="row-span-2 flex min-h-[320px] flex-col justify-between rounded-[26px] bg-[#b63a2c] p-5 text-white shadow-sm transition hover:-translate-y-0.5 sm:min-h-[390px] sm:p-7"
               >
                 <Boxes size={30} />
 
                 <div>
-                  <p className="text-[2rem] font-black leading-[1.02] sm:text-[2.5rem]">
+                  <p className="text-[2rem] font-black leading-[.98] sm:text-[2.65rem]">
                     Pacas
                     <br />
                     Kids
                   </p>
-                  <p className="mt-3 max-w-[16rem] text-sm leading-6 text-white/80 sm:text-base">
+
+                  <p className="mt-3 text-[12px] leading-5 text-white/80 sm:text-sm sm:leading-6">
                     Fotos, videos y pedido personalizado.
                   </p>
                 </div>
@@ -117,29 +118,29 @@ export default async function HomePage() {
 
               <Link
                 href="/pacas"
-                className="flex min-h-[138px] flex-col justify-between rounded-[24px] bg-[#c78316] p-4 text-white transition hover:-translate-y-1 sm:min-h-[170px] sm:p-5"
+                className="flex min-h-[154px] flex-col justify-end rounded-[24px] bg-[#c78316] p-4 text-white shadow-sm transition hover:-translate-y-0.5 sm:min-h-[188px] sm:p-5"
               >
-                <div />
-                <div>
-                  <p className="text-2xl font-black sm:text-[2rem]">
-                    Damas
-                  </p>
-                  <p className="mt-2 max-w-[12rem] text-xs leading-5 text-white/80 sm:text-sm">
-                    Categorías por temporada.
-                  </p>
-                </div>
+                <p className="text-2xl font-black sm:text-[2rem]">
+                  Damas
+                </p>
+
+                <p className="mt-2 text-[11px] leading-5 text-white/82 sm:text-sm">
+                  Categorías por temporada.
+                </p>
               </Link>
 
               <Link
                 href="/series"
-                className="flex min-h-[138px] flex-col justify-between rounded-[24px] bg-[#5a8b86] p-4 text-white transition hover:-translate-y-1 sm:min-h-[170px] sm:p-5"
+                className="flex min-h-[154px] flex-col justify-between rounded-[24px] bg-[#5a8b86] p-4 text-white shadow-sm transition hover:-translate-y-0.5 sm:min-h-[188px] sm:p-5"
               >
                 <PackageCheck size={24} />
+
                 <div>
-                  <p className="text-2xl font-black sm:text-[2rem]">
+                  <p className="text-xl font-black sm:text-[2rem]">
                     Series Kids
                   </p>
-                  <p className="mt-2 max-w-[12rem] text-xs leading-5 text-white/80 sm:text-sm">
+
+                  <p className="mt-2 text-[11px] leading-5 text-white/82 sm:text-sm">
                     Stock real por código.
                   </p>
                 </div>
@@ -148,7 +149,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="ti-container py-14">
+        {/* PACAS: 2 POR FILA EN CELULAR */}
+        <section className="ti-container py-12 sm:py-14">
           <div className="flex items-end justify-between gap-4">
             <div>
               <span className="ti-pill">
@@ -168,14 +170,14 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
             {(categories ?? [])
               .slice(0, 8)
               .map((category) => (
                 <Link
                   href={`/pacas/${category.slug}`}
                   key={category.id}
-                  className="ti-card group overflow-hidden transition hover:-translate-y-1"
+                  className="group overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_8px_22px_rgba(67,47,34,.07)] transition hover:-translate-y-1"
                 >
                   <div
                     className="aspect-square bg-[#f0e6dc] bg-cover bg-center"
@@ -188,22 +190,25 @@ export default async function HomePage() {
                     }
                   />
 
-                  <div className="p-4 sm:p-5">
-                    <span className="text-[10px] font-black uppercase tracking-[.18em] text-[#5a8b86] sm:text-xs">
+                  <div className="p-3.5 sm:p-5">
+                    <span className="text-[9px] font-black uppercase tracking-[.16em] text-[#5a8b86] sm:text-xs">
                       {category.audience}
                     </span>
 
-                    <h3 className="mt-2 text-xl font-black leading-tight sm:text-2xl">
+                    <h3 className="mt-2 text-[17px] font-black leading-tight sm:text-2xl">
                       {category.name}
                     </h3>
 
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#7f746c] sm:text-sm sm:leading-6">
+                    <p className="mt-2 line-clamp-2 text-[10px] leading-4 text-[#7f746c] sm:text-sm sm:leading-6">
                       {category.description}
                     </p>
 
-                    <span className="mt-3 inline-flex items-center gap-2 text-xs font-black text-[#9b382b] sm:text-sm">
+                    <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black text-[#9b382b] sm:text-sm">
                       Ver categoría
-                      <ArrowRight size={16} className="transition group-hover:translate-x-1" />
+                      <ArrowRight
+                        size={14}
+                        className="transition group-hover:translate-x-1"
+                      />
                     </span>
                   </div>
                 </Link>
@@ -211,7 +216,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="bg-white/50 py-14">
+        {/* SERIES */}
+        <section className="bg-white/50 py-12 sm:py-14">
           <div className="ti-container">
             <div className="flex items-end justify-between gap-4">
               <div>
@@ -304,62 +310,47 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* SOLO DESKTOP / TABLET: OCULTO COMPLETAMENTE EN CELULAR */}
         <section
           id="como-comprar"
-          className="hidden sm:block"
+          className="hidden md:block"
         >
-          <div className="ti-container py-16 sm:py-20">
-          <div className="rounded-[30px] bg-[#9d3d31] p-5 shadow-[0_18px_45px_rgba(117,48,38,.15)] sm:p-7">
-            <div>
+          <div className="ti-container py-14">
+            <div className="rounded-[30px] bg-[#9d3d31] p-7 shadow-[0_18px_45px_rgba(117,48,38,.15)]">
               <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#ffd46a]">
                 Cómo comprar
               </p>
 
-              <h2 className="mt-2 text-2xl font-black tracking-[-.03em] text-white sm:text-4xl">
+              <h2 className="mt-2 text-4xl font-black tracking-[-.03em] text-white">
                 Explora, elige y compra.
               </h2>
-            </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-4">
-              {[
-                [
-                  "01",
-                  "Explora",
-                  "Mira fotos y videos.",
-                ],
-                [
-                  "02",
-                  "Elige",
-                  "Selecciona tu opción.",
-                ],
-                [
-                  "03",
-                  "Compra",
-                  "Finaliza por WhatsApp.",
-                ],
-              ].map(
-                ([number, title, description]) => (
+              <div className="mt-5 grid grid-cols-3 gap-4">
+                {[
+                  ["01", "Explora", "Mira fotos y videos."],
+                  ["02", "Elige", "Selecciona tu opción."],
+                  ["03", "Compra", "Finaliza por WhatsApp."],
+                ].map(([number, title, description]) => (
                   <div
                     key={number}
-                    className="min-w-0 rounded-[18px] bg-white/[.10] p-3 sm:rounded-[22px] sm:p-5"
+                    className="rounded-[22px] bg-white/[.10] p-5"
                   >
-                    <p className="text-[11px] font-black text-[#ffd46a] sm:text-sm">
+                    <p className="text-sm font-black text-[#ffd46a]">
                       {number}
                     </p>
 
-                    <h3 className="mt-2 text-[14px] font-black text-white sm:text-2xl">
+                    <h3 className="mt-2 text-2xl font-black text-white">
                       {title}
                     </h3>
 
-                    <p className="mt-1 hidden text-[11px] leading-5 text-white/70 sm:block">
+                    <p className="mt-1 text-[11px] leading-5 text-white/70">
                       {description}
                     </p>
                   </div>
-                ),
-              )}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
         </section>
       </main>
 
