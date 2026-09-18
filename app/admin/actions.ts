@@ -6,9 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function logout() {
   const supabase = await createClient();
-
   await supabase.auth.signOut();
-
   redirect("/login-admin");
 }
 
@@ -30,22 +28,12 @@ function csvNumbers(value: FormDataEntryValue | null) {
 // PACAS
 // ============================================================
 
-export async function createPacaCategory(
-  formData: FormData
-) {
+export async function createPacaCategory(formData: FormData) {
   const supabase = await createClient();
 
-  const audience = String(
-    formData.get("audience") ?? "kids"
-  );
-
-  const name = String(
-    formData.get("name") ?? ""
-  ).trim();
-
-  const description = String(
-    formData.get("description") ?? ""
-  ).trim();
+  const audience = String(formData.get("audience") ?? "kids");
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
 
   const sizeRanges = csvText(
     formData.get("size_ranges")
@@ -96,40 +84,22 @@ export async function createPacaCategory(
   redirect(`/admin/pacas/${data.id}`);
 }
 
-export async function updatePacaCategory(
-  formData: FormData
-) {
+export async function updatePacaCategory(formData: FormData) {
   const supabase = await createClient();
 
-  const id = String(
-    formData.get("id")
-  );
+  const id = String(formData.get("id"));
 
   const { error } = await supabase
     .from("paca_categories")
     .update({
-      audience: String(
-        formData.get("audience")
-      ),
-
-      name: String(
-        formData.get("name") ?? ""
-      ).trim(),
-
-      description: String(
-        formData.get("description") ?? ""
-      ).trim(),
-
-      size_ranges: csvText(
-        formData.get("size_ranges")
-      ),
-
+      audience: String(formData.get("audience")),
+      name: String(formData.get("name") ?? "").trim(),
+      description: String(formData.get("description") ?? "").trim(),
+      size_ranges: csvText(formData.get("size_ranges")),
       box_quantities: csvNumbers(
         formData.get("box_quantities")
       ),
-
-      active:
-        formData.get("active") === "on",
+      active: formData.get("active") === "on",
     })
     .eq("id", id);
 
@@ -143,18 +113,11 @@ export async function updatePacaCategory(
   revalidatePath(`/admin/pacas/${id}`);
 }
 
-export async function setPacaCover(
-  formData: FormData
-) {
+export async function setPacaCover(formData: FormData) {
   const supabase = await createClient();
 
-  const id = String(
-    formData.get("id")
-  );
-
-  const url = String(
-    formData.get("url")
-  );
+  const id = String(formData.get("id"));
+  const url = String(formData.get("url"));
 
   const { error } = await supabase
     .from("paca_categories")
@@ -174,9 +137,8 @@ export async function setPacaCover(
 
 
 // ============================================================
-// SERIES
-// NUEVOS CÓDIGOS YA NO SE CREAN AQUÍ.
-// NACEN DESDE UNA COMPRA CHINA.
+// SERIES - EDICIÓN DE FICHA
+// Los códigos NUEVOS nacen desde Compras China.
 // ============================================================
 
 export async function updateSeriesProduct(
@@ -184,9 +146,7 @@ export async function updateSeriesProduct(
 ) {
   const supabase = await createClient();
 
-  const id = String(
-    formData.get("id")
-  );
+  const id = String(formData.get("id"));
 
   const name = String(
     formData.get("name") ?? ""
@@ -201,20 +161,22 @@ export async function updateSeriesProduct(
   );
 
   const preorderMarkup = Number(
-    formData.get(
-      "preorder_markup_pct"
-    ) ?? 30
+    formData.get("preorder_markup_pct") ?? 30
   );
 
   const stockMarkup = Number(
-    formData.get(
-      "stock_markup_pct"
-    ) ?? 40
+    formData.get("stock_markup_pct") ?? 40
   );
 
   const description = String(
     formData.get("description") ?? ""
   );
+
+  if (!name) {
+    throw new Error(
+      "El modelo debe tener un nombre."
+    );
+  }
 
   if (
     !Number.isFinite(pricePreorder) ||
@@ -238,24 +200,18 @@ export async function updateSeriesProduct(
     .from("series_products")
     .update({
       name,
-
-      price_preorder:
-        pricePreorder,
-
-      price_stock:
-        priceStock,
+      price_preorder: pricePreorder,
+      price_stock: priceStock,
 
       preorder_markup_pct:
-        Number.isFinite(
-          preorderMarkup
-        )
+        Number.isFinite(preorderMarkup) &&
+        preorderMarkup >= 0
           ? preorderMarkup
           : 30,
 
       stock_markup_pct:
-        Number.isFinite(
-          stockMarkup
-        )
+        Number.isFinite(stockMarkup) &&
+        stockMarkup >= 0
           ? stockMarkup
           : 40,
 
@@ -287,13 +243,8 @@ export async function setSeriesCover(
 ) {
   const supabase = await createClient();
 
-  const id = String(
-    formData.get("id")
-  );
-
-  const url = String(
-    formData.get("url")
-  );
+  const id = String(formData.get("id"));
+  const url = String(formData.get("url"));
 
   const { error } = await supabase
     .from("series_products")
@@ -315,10 +266,43 @@ export async function setSeriesCover(
 
 
 // ============================================================
-// COMPRAS CHINA
+// COMPRAS CHINA V5
+// Usa el RPC V2 y después enlaza la foto portada de cada fila.
 // ============================================================
 
-export async function createChinaPurchaseV2(
+type PurchasePayloadItem = {
+  product_id?: string | null;
+  name?: string;
+  sizes?: string[];
+  colors?: Array<{
+    name: string;
+    qty: number;
+  }>;
+  supplier_cost_series?: number;
+  preorder_price?: number;
+  stock_price?: number;
+  cover_url?: string | null;
+};
+
+type PurchasePayload = {
+  purchase_date?: string;
+  supplier?: string;
+  status?: string;
+  currency?: string;
+  exchange_rate?: number;
+
+  freight?: number;
+  taxes?: number;
+  commissions?: number;
+  local_transport?: number;
+  other_costs?: number;
+
+  notes?: string;
+
+  items?: PurchasePayloadItem[];
+};
+
+export async function createChinaPurchaseV5(
   formData: FormData
 ) {
   const supabase = await createClient();
@@ -327,7 +311,7 @@ export async function createChinaPurchaseV2(
     formData.get("payload") ?? "{}"
   );
 
-  let payload: unknown;
+  let payload: PurchasePayload;
 
   try {
     payload = JSON.parse(raw);
@@ -337,7 +321,7 @@ export async function createChinaPurchaseV2(
     );
   }
 
-  const { data, error } =
+  const { data: purchaseId, error } =
     await supabase.rpc(
       "create_series_china_purchase_v2",
       {
@@ -349,6 +333,52 @@ export async function createChinaPurchaseV2(
     throw new Error(error.message);
   }
 
+  // Después de crear la compra, obtenemos qué producto
+  // nació en cada fila y colocamos su foto portada.
+  const { data: purchaseItems, error: itemsError } =
+    await supabase
+      .from("series_china_purchase_items")
+      .select("line_no,product_id")
+      .eq("purchase_id", purchaseId)
+      .order("line_no");
+
+  if (itemsError) {
+    throw new Error(itemsError.message);
+  }
+
+  const rows = payload.items ?? [];
+
+  for (const item of purchaseItems ?? []) {
+    const sourceRow =
+      rows[Number(item.line_no) - 1];
+
+    const coverUrl =
+      sourceRow?.cover_url?.trim();
+
+    if (!coverUrl) {
+      continue;
+    }
+
+    const { error: coverError } =
+      await supabase
+        .from("series_products")
+        .update({
+          cover_url: coverUrl,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq(
+          "id",
+          item.product_id
+        );
+
+    if (coverError) {
+      throw new Error(
+        coverError.message
+      );
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/series");
   revalidatePath("/admin");
@@ -356,7 +386,7 @@ export async function createChinaPurchaseV2(
   revalidatePath("/admin/series/compras");
 
   redirect(
-    `/admin/series/compras/${data}`
+    `/admin/series/compras/${purchaseId}`
   );
 }
 

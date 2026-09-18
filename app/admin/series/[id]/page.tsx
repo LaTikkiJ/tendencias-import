@@ -5,6 +5,7 @@ import {
 
 import {
   ArrowLeft,
+  Globe2,
   PackageCheck,
   Ship,
 } from "lucide-react";
@@ -146,37 +147,39 @@ export default async function AdminSeriesDetailPage({
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Link
         href="/admin/series"
-        className="inline-flex items-center gap-2 text-sm font-black text-[#8f3a2e]"
+        className="inline-flex items-center gap-2 text-xs font-black text-[#8f3a2e] sm:text-sm"
       >
         <ArrowLeft
-          size={16}
+          size={
+            15
+          }
         />
-
-        Volver
+        Volver al inventario
       </Link>
 
-      <section className="rounded-[30px] border border-[#eaded3] bg-white p-6 shadow-sm">
-        <p className="text-xs font-black uppercase tracking-[.18em] text-[#5a8b86]">
+      <section className="rounded-[26px] border border-[#eaded3] bg-white p-5 shadow-sm sm:rounded-[30px] sm:p-6">
+        <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#5a8b86]">
           {
             product.code
           }
         </p>
 
-        <h1 className="mt-2 text-4xl font-black">
+        <h1 className="mt-2 text-3xl font-black tracking-[-.04em] sm:text-4xl">
           {
             product.name
           }
         </h1>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#edf7f5] px-3 py-2 text-xs font-black text-[#42746e]">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#edf7f5] px-3 py-2 text-[10px] font-black text-[#42746e]">
             <PackageCheck
-              size={13}
+              size={
+                13
+              }
             />
-
             Stock{" "}
             {
               product.stock_series_available ??
@@ -184,45 +187,59 @@ export default async function AdminSeriesDetailPage({
             }
           </span>
 
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#fff6e9] px-3 py-2 text-xs font-black text-[#9b6510]">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#fff6e9] px-3 py-2 text-[10px] font-black text-[#9b6510]">
             <Ship
-              size={13}
+              size={
+                13
+              }
             />
-
             En camino{" "}
             {
               product.preorder_series_available ??
               0
             }
           </span>
+
+          <Link
+            href={`/series/${product.slug}`}
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-full bg-[#fff0e9] px-3 py-2 text-[10px] font-black text-[#9b382b]"
+          >
+            <Globe2
+              size={
+                13
+              }
+            />
+            Ver en la web
+          </Link>
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-[20px] bg-white p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Prov. / serie
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-[18px] bg-white p-4 shadow-sm">
+          <p className="text-[8px] font-black uppercase text-[#8b8078]">
+            Proveedor / serie
           </p>
 
-          <p className="mt-2 text-xl font-black">
+          <p className="mt-2 text-lg font-black">
             {money(
               product.avg_supplier_cost_series
             )}
           </p>
         </div>
 
-        <div className="rounded-[20px] bg-[#f4faf8] p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#42746e]">
+        <div className="rounded-[18px] bg-[#f4faf8] p-4 shadow-sm">
+          <p className="text-[8px] font-black uppercase text-[#42746e]">
             Real / serie
           </p>
 
-          <p className="mt-2 text-xl font-black text-[#42746e]">
+          <p className="mt-2 text-lg font-black text-[#42746e]">
             {money(
               product.avg_landed_cost_series
             )}
           </p>
 
-          <p className="mt-1 text-xs font-bold text-[#64847f]">
+          <p className="mt-1 text-[9px] font-bold text-[#64847f]">
             {money(
               product.avg_landed_cost_piece
             )}{" "}
@@ -230,24 +247,24 @@ export default async function AdminSeriesDetailPage({
           </p>
         </div>
 
-        <div className="rounded-[20px] bg-[#fff8e9] p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#9b6510]">
+        <div className="rounded-[18px] bg-[#fff8e9] p-4 shadow-sm">
+          <p className="text-[8px] font-black uppercase text-[#9b6510]">
             Preventa
           </p>
 
-          <p className="mt-2 text-xl font-black text-[#9b6510]">
+          <p className="mt-2 text-lg font-black text-[#9b6510]">
             {money(
               product.price_preorder
             )}
           </p>
         </div>
 
-        <div className="rounded-[20px] bg-[#fff0e9] p-4 shadow-sm">
-          <p className="text-[9px] font-black uppercase text-[#9b382b]">
+        <div className="rounded-[18px] bg-[#fff0e9] p-4 shadow-sm">
+          <p className="text-[8px] font-black uppercase text-[#9b382b]">
             Stock
           </p>
 
-          <p className="mt-2 text-xl font-black text-[#9b382b]">
+          <p className="mt-2 text-lg font-black text-[#9b382b]">
             {money(
               product.price_stock
             )}
@@ -255,24 +272,39 @@ export default async function AdminSeriesDetailPage({
         </div>
       </section>
 
-      <form
-        action={
-          updateSeriesProduct
-        }
-        className="rounded-[28px] border border-[#eaded3] bg-white p-5 shadow-sm"
-      >
-        <input
-          type="hidden"
-          name="id"
-          value={
-            product.id
-          }
-        />
+      <section className="rounded-[26px] border border-[#eaded3] bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-5 rounded-[18px] bg-[#fff7f1] p-4">
+          <p className="text-xs font-black text-[#8f3a2e]">
+            Ficha que verá la clienta
+          </p>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-black">
-              Nombre
+          <p className="mt-1 text-[10px] leading-5 text-[#7f746c]">
+            Aquí puedes cambiar el
+            nombre, descripción,
+            precios y publicación.
+            Debajo puedes subir todas
+            las fotos y videos del
+            modelo.
+          </p>
+        </div>
+
+        <form
+          action={
+            updateSeriesProduct
+          }
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          <input
+            type="hidden"
+            name="id"
+            value={
+              product.id
+            }
+          />
+
+          <div className="sm:col-span-2">
+            <label className="mb-2 block text-xs font-black">
+              Nombre visible en web
             </label>
 
             <input
@@ -286,7 +318,7 @@ export default async function AdminSeriesDetailPage({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-black">
+            <label className="mb-2 block text-xs font-black">
               Precio preventa
             </label>
 
@@ -305,7 +337,7 @@ export default async function AdminSeriesDetailPage({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-black">
+            <label className="mb-2 block text-xs font-black">
               Precio stock
             </label>
 
@@ -324,9 +356,8 @@ export default async function AdminSeriesDetailPage({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-black">
-              % sugerido
-              preventa
+            <label className="mb-2 block text-xs font-black">
+              % sugerido preventa
             </label>
 
             <input
@@ -343,9 +374,8 @@ export default async function AdminSeriesDetailPage({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-black">
-              % sugerido
-              stock
+            <label className="mb-2 block text-xs font-black">
+              % sugerido stock
             </label>
 
             <input
@@ -361,7 +391,7 @@ export default async function AdminSeriesDetailPage({
             />
           </div>
 
-          <label className="flex items-center gap-3 rounded-[18px] border border-[#eaded3] p-4">
+          <label className="flex min-h-14 items-center gap-3 rounded-[16px] border border-[#eaded3] px-4">
             <input
               type="checkbox"
               name="active"
@@ -370,12 +400,18 @@ export default async function AdminSeriesDetailPage({
               }
             />
 
-            <span className="font-black">
-              Visible
-            </span>
+            <div>
+              <p className="text-sm font-black">
+                Visible en web
+              </p>
+
+              <p className="text-[9px] text-[#7f746c]">
+                Mostrar a clientas.
+              </p>
+            </div>
           </label>
 
-          <label className="flex items-center gap-3 rounded-[18px] border border-[#eaded3] p-4">
+          <label className="flex min-h-14 items-center gap-3 rounded-[16px] border border-[#eaded3] px-4">
             <input
               type="checkbox"
               name="featured"
@@ -384,49 +420,66 @@ export default async function AdminSeriesDetailPage({
               }
             />
 
-            <span className="font-black">
-              Destacado
-            </span>
+            <div>
+              <p className="text-sm font-black">
+                Destacado
+              </p>
+
+              <p className="text-[9px] text-[#7f746c]">
+                Prioridad en tienda.
+              </p>
+            </div>
           </label>
 
-          <textarea
-            name="description"
-            className="ti-input min-h-24 py-3 md:col-span-2"
-            defaultValue={
-              product.description ??
-              ""
-            }
-            placeholder="Descripción..."
-          />
+          <div className="sm:col-span-2">
+            <label className="mb-2 block text-xs font-black">
+              Descripción para la clienta
+            </label>
 
-          <button className="ti-button ti-button-primary md:col-span-2">
-            Guardar cambios
+            <textarea
+              name="description"
+              className="ti-input min-h-28 py-3"
+              defaultValue={
+                product.description ??
+                ""
+              }
+              placeholder="Detalles del conjunto..."
+            />
+          </div>
+
+          <button className="ti-button ti-button-primary sm:col-span-2">
+            Guardar ficha
           </button>
-        </div>
-      </form>
+        </form>
+      </section>
 
-      <section className="overflow-hidden rounded-[28px] border border-[#eaded3] bg-white shadow-sm">
-        <div className="border-b border-[#eaded3] px-5 py-4">
+      <section className="overflow-hidden rounded-[26px] border border-[#eaded3] bg-white shadow-sm">
+        <div className="border-b border-[#eaded3] px-4 py-4 sm:px-5">
           <p className="font-black">
-            Stock por color y
+            Inventario por color y
             talla
+          </p>
+
+          <p className="mt-1 text-[10px] text-[#7f746c]">
+            Aparece cuando la compra
+            China se marca como
+            recibida.
           </p>
         </div>
 
         {inventory.length ===
         0 ? (
-          <div className="p-8 text-center text-sm text-[#7f746c]">
-            Este código todavía
-            está en preventa o aún
-            no se ha recibido
-            físicamente.
+          <div className="p-8 text-center text-xs text-[#7f746c]">
+            Todavía no hay stock
+            físico. Si viene de China,
+            se mantiene como preventa.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-[650px] w-full">
+            <table className="min-w-[580px] w-full">
               <thead>
-                <tr className="bg-[#f8f4f0] text-[9px] font-black uppercase text-[#786d65]">
-                  <th className="px-4 py-3 text-left">
+                <tr className="bg-[#f8f4f0] text-[8px] font-black uppercase text-[#786d65]">
+                  <th className="px-3 py-3 text-left">
                     Color
                   </th>
 
@@ -441,7 +494,7 @@ export default async function AdminSeriesDetailPage({
                         key={
                           size
                         }
-                        className="px-4 py-3 text-center"
+                        className="px-3 py-3 text-center"
                       >
                         {
                           size
@@ -464,7 +517,7 @@ export default async function AdminSeriesDetailPage({
                       }
                       className="border-t border-[#f0e7df]"
                     >
-                      <td className="px-4 py-3 text-sm font-black">
+                      <td className="px-3 py-3 text-xs font-black">
                         {
                           color
                         }
@@ -481,7 +534,7 @@ export default async function AdminSeriesDetailPage({
                             key={
                               size
                             }
-                            className="px-4 py-3 text-center text-sm font-black"
+                            className="px-3 py-3 text-center text-xs font-black"
                           >
                             {sizes.get(
                               size
@@ -499,19 +552,34 @@ export default async function AdminSeriesDetailPage({
         )}
       </section>
 
-      <MediaManager
-        ownerType="series"
-        ownerId={
-          product.id
-        }
-        initialMedia={
-          (media ??
-            []) as any
-        }
-        currentCover={
-          product.cover_url
-        }
-      />
+      <section className="rounded-[26px] border border-[#eaded3] bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-4">
+          <p className="font-black">
+            Fotos y videos para la web
+          </p>
+
+          <p className="mt-1 text-[10px] leading-5 text-[#7f746c]">
+            Sube todas las imágenes y
+            videos del código. Marca
+            una imagen como portada
+            para cambiar la principal.
+          </p>
+        </div>
+
+        <MediaManager
+          ownerType="series"
+          ownerId={
+            product.id
+          }
+          initialMedia={
+            (media ??
+              []) as any
+          }
+          currentCover={
+            product.cover_url
+          }
+        />
+      </section>
     </div>
   );
 }
