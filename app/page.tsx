@@ -71,7 +71,7 @@ export default async function HomePage() {
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-8 text-[#6f655e]">
-              Explora Pacas Kids y Damas a pedido, o elige Series Kids
+              Explora Pacas Kids y Damas en preventa, o elige Series Kids
               disponibles desde nuestra tienda.
             </p>
 

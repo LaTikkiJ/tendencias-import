@@ -108,12 +108,11 @@ export function PacaGallery({
                 />
               </div>
             )}
-
-            {item.title && (
-              <p className="truncate px-3 py-2.5 text-[10px] font-bold">
-                {item.title}
-              </p>
-            )}
+            <div className="flex h-10 items-center justify-center border-t border-[#f0e6dd] bg-white px-3">
+              <span className="text-[9px] font-black uppercase tracking-[.12em] text-[#9b382b]">
+                Disponible en preventa
+              </span>
+            </div>
           </article>
         ))}
       </div>

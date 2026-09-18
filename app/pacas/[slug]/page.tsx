@@ -99,7 +99,7 @@ export default async function PacaDetailPage({
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#fff0e9] px-4 py-2 text-[10px] font-black uppercase tracking-[.08em] text-[#9b382b]">
             <PackageOpen size={13} />
-            Todo es a pedido
+            En preventa
           </span>
 
           {(category.size_ranges ?? []).map((size: string) => (

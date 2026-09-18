@@ -628,7 +628,7 @@ export default function PacaOrderConfigurator({
           <div className="flex items-center gap-2 text-[#9b382b]">
             <PackageOpen size={14} />
             <p className="text-[9px] font-black uppercase tracking-[.12em]">
-              Todo es a pedido
+              En preventa
             </p>
           </div>
 
@@ -689,7 +689,7 @@ export default function PacaOrderConfigurator({
             <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-[#eaded3] bg-[#fffaf6]/95 p-4 backdrop-blur sm:p-5">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[.14em] text-[#9b382b]">
-                  Paca a pedido
+                  Paca en preventa
                 </p>
                 <h3 className="mt-1 text-xl font-black sm:text-2xl">
                   {categoryName}
@@ -879,7 +879,7 @@ export default function PacaOrderConfigurator({
                     {money(Number(selectedPrice.price_pen))}
                   </p>
                   <p className="mt-1 text-[9px] text-[#7f746c]">
-                    {quantity} prendas · Todo es a pedido
+                    {quantity} prendas · En preventa
                   </p>
                 </div>
               )}
@@ -933,7 +933,7 @@ export default function PacaOrderConfigurator({
             <div className="flex items-center justify-between border-b border-[#eaded3] p-4">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[.12em] text-[#5a8b86]">
-                  Pacas a pedido
+                  Pacas en preventa
                 </p>
                 <h3 className="mt-1 text-xl font-black">
                   Tu carrito
@@ -1085,7 +1085,7 @@ export default function PacaOrderConfigurator({
                     {money(cartTotal)}
                   </p>
                   <p className="mt-1 text-[8px] text-[#8b8078]">
-                    {cartPieces} prendas · Todo es a pedido
+                    {cartPieces} prendas · En preventa
                   </p>
                 </div>
               </div>
