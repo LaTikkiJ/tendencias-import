@@ -5,7 +5,10 @@ import {
   Camera,
   ChevronDown,
   CopyPlus,
+  Eye,
   ImagePlus,
+  Pencil,
+  TableProperties,
   Plus,
   ReceiptText,
   Save,
@@ -288,6 +291,8 @@ export function ChinaPurchaseForm({
 
   const [customSizes, setCustomSizes] = useState<Record<string, string>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [modelModalKey, setModelModalKey] = useState<string | null>(null);
+  const [modelModalMode, setModelModalMode] = useState<"VIEW" | "EDIT">("EDIT");
 
   const productMap = useMemo(
     () => new Map(products.map((product) => [product.id, product])),
@@ -645,6 +650,36 @@ export function ChinaPurchaseForm({
     }
   }
 
+
+  function openNewModelModal() {
+    const model = newModel();
+    setModels((current) => [...current, model]);
+    setModelModalMode("EDIT");
+    setModelModalKey(model.key);
+  }
+
+  function openModelModal(key: string, mode: "VIEW" | "EDIT") {
+    setModelModalMode(mode);
+    setModelModalKey(key);
+  }
+
+  function deleteModel(key: string) {
+    setModels((current) => {
+      if (current.length === 1) {
+        return current;
+      }
+
+      return current.filter((item) => item.key !== key);
+    });
+
+    if (modelModalKey === key) {
+      setModelModalKey(null);
+    }
+  }
+
+  const activeModalModel =
+    detailedModels.find((model) => model.key === modelModalKey) ?? null;
+
   const modelsValid = detailedModels.every(
     (model) =>
       (model.mode === "EXISTING" ? Boolean(model.product_id) : model.name.trim().length > 1) &&
@@ -947,231 +982,489 @@ export function ChinaPurchaseForm({
 
       <SectionTitle
         eyebrow="Modelos / códigos"
-        title="Registra lo que realmente compraste"
-        description="Un modelo = un código TI. Si el mismo modelo viene en rosado y negro, ambos colores viven dentro del mismo código."
+        title="Códigos de esta carga"
+        description="Trabaja rápido con muchos códigos: revisa todo en tabla y abre el modal solo cuando necesites registrar o editar un modelo."
         action={
           <button
             type="button"
-            onClick={() => setModels((current) => [...current, newModel()])}
+            onClick={openNewModelModal}
             className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fff0e9] px-4 text-xs font-black text-[#9b382b]"
           >
-            <CopyPlus size={15} />
-            Agregar modelo
+            <Plus size={15} />
+            Agregar código
           </button>
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {detailedModels.map((model, index) => (
-          <article
-            key={model.key}
-            className="overflow-hidden rounded-[28px] border border-[#eaded3] bg-white shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-[#eaded3] bg-[#fffdfb] px-4 py-4 sm:px-5">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[.13em] text-[#5a8b86]">
-                  Código {index + 1}
-                </p>
-                <p className="mt-1 text-sm font-black">
-                  {model.mode === "NEW"
-                    ? "Código TI automático"
-                    : model.existing?.code ?? "Código existente"}
-                </p>
-              </div>
+      <section className="overflow-hidden rounded-[26px] border border-[#eaded3] bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eaded3] bg-[#fffdfb] px-4 py-3 sm:px-5">
+          <div className="flex items-center gap-2">
+            <span className="grid size-9 place-items-center rounded-full bg-[#edf7f5] text-[#42746e]">
+              <TableProperties size={15} />
+            </span>
+            <div>
+              <p className="text-xs font-black">Tabla de códigos</p>
+              <p className="mt-0.5 text-[9px] text-[#8b8078]">
+                En celular desliza horizontalmente; conserva el formato tabla para comparar costos y precios.
+              </p>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-2">
-                {model.totalSeries > 0 && model.totalPieces > 0 && (
-                  <span className="rounded-full bg-[#edf7f5] px-3 py-2 text-[10px] font-black text-[#42746e]">
-                    {model.totalSeries} series · {model.totalPieces} prendas
-                  </span>
-                )}
+          <div className="flex items-center gap-2 text-[9px] font-black text-[#7f746c]">
+            <span>{detailedModels.length} códigos</span>
+            <span>·</span>
+            <span>{totalSeries} series</span>
+            <span>·</span>
+            <span>{totalPieces} prendas</span>
+          </div>
+        </div>
 
-                {models.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setModels((current) => current.filter((item) => item.key !== model.key))
-                    }
-                    className="grid size-9 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c]"
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-[#eaded3] bg-[#f9f6f2] text-[8px] font-black uppercase tracking-[.08em] text-[#7f746c]">
+                <th className="sticky left-0 z-10 bg-[#f9f6f2] px-4 py-3">Código</th>
+                <th className="px-4 py-3">Modelo</th>
+                <th className="px-4 py-3 text-center">Series</th>
+                <th className="px-4 py-3 text-center">Prendas</th>
+                <th className="px-4 py-3">Colores</th>
+                <th className="px-4 py-3 text-right">Costo final/prenda</th>
+                <th className="px-4 py-3 text-right">Preventa sugerida</th>
+                <th className="px-4 py-3 text-right">P. stock final</th>
+                <th className="px-4 py-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {detailedModels.map((model, index) => {
+                const modelName =
+                  model.mode === "EXISTING"
+                    ? model.existing?.name ?? model.name
+                    : model.name;
+
+                const modelCode =
+                  model.mode === "EXISTING"
+                    ? model.existing?.code ?? "—"
+                    : `TI auto ${index + 1}`;
+
+                return (
+                  <tr
+                    key={model.key}
+                    className="border-b border-[#f0e8e1] last:border-0 hover:bg-[#fffaf6]"
                   >
-                    <Trash2 size={14} />
-                  </button>
+                    <td className="sticky left-0 z-[5] bg-white px-4 py-3">
+                      <span className="rounded-full bg-[#edf7f5] px-2.5 py-1 text-[9px] font-black text-[#42746e]">
+                        {modelCode}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="flex min-w-[220px] items-center gap-3">
+                        <div className="size-11 shrink-0 overflow-hidden rounded-[12px] bg-[#f1e9e1]">
+                          {model.cover_url ? (
+                            <img
+                              src={model.cover_url}
+                              alt={modelName || "Modelo"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="grid h-full place-items-center text-[#bda99b]">
+                              <ImagePlus size={15} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="max-w-[190px] truncate text-[11px] font-black">
+                            {modelName || "Sin nombre"}
+                          </p>
+                          <p className="mt-1 max-w-[190px] truncate text-[8px] text-[#8b8078]">
+                            {model.sizes.length > 0
+                              ? model.sizes.join(" · ")
+                              : "Sin tallas"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-center text-[11px] font-black">
+                      {model.totalSeries || "—"}
+                    </td>
+
+                    <td className="px-4 py-3 text-center text-[11px] font-black">
+                      {model.totalPieces || "—"}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <p className="max-w-[170px] truncate text-[9px] font-bold text-[#6f655e]">
+                        {model.validColors.length > 0
+                          ? model.validColors
+                              .map((color) => `${color.name} ${color.qty}`)
+                              .join(" · ")
+                          : "Sin colores"}
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <p className="text-[11px] font-black text-[#42746e]">
+                        {model.finalPiecePen > 0 ? pen(model.finalPiecePen) : "—"}
+                      </p>
+                      {model.finalPiecePen > 0 && effectiveGarmentRate > 0 && (
+                        <p className="mt-1 text-[8px] text-[#8b8078]">
+                          {original(model.finalPiecePen / effectiveGarmentRate, currency)}
+                        </p>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <p className="text-[11px] font-black text-[#9b6510]">
+                        {model.suggestedPreorder > 0 ? pen(model.suggestedPreorder) : "—"}
+                      </p>
+                      <p className="mt-1 text-[8px] text-[#8b8078]">
+                        {model.preorderMargin.toFixed(0)}% utilidad
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <p className="text-[11px] font-black text-[#9b382b]">
+                        {model.stockPrice > 0 ? pen(model.stockPrice) : "—"}
+                      </p>
+                      <p className="mt-1 text-[8px] text-[#8b8078]">
+                        {model.stockRealMargin > 0
+                          ? `${model.stockRealMargin.toFixed(1)}% real`
+                          : `${model.stockMargin.toFixed(0)}% objetivo`}
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="flex justify-center gap-1.5">
+                        <button
+                          type="button"
+                          title="Ver"
+                          onClick={() => openModelModal(model.key, "VIEW")}
+                          className="grid size-9 place-items-center rounded-full bg-[#edf7f5] text-[#42746e]"
+                        >
+                          <Eye size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          title="Editar"
+                          onClick={() => openModelModal(model.key, "EDIT")}
+                          className="grid size-9 place-items-center rounded-full bg-[#fff6e9] text-[#9b6510]"
+                        >
+                          <Pencil size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          title="Eliminar"
+                          disabled={models.length === 1}
+                          onClick={() => deleteModel(model.key)}
+                          className="grid size-9 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c] disabled:opacity-25"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {activeModalModel && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4">
+          <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-[28px] bg-[#fffaf6] shadow-2xl sm:rounded-[28px]">
+            <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[#eaded3] bg-[#fffaf6]/95 px-4 py-4 backdrop-blur sm:px-6">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[.14em] text-[#5a8b86]">
+                  {modelModalMode === "VIEW" ? "Detalle del código" : "Registrar / editar código"}
+                </p>
+
+                <h3 className="mt-1 text-xl font-black sm:text-2xl">
+                  {activeModalModel.mode === "EXISTING"
+                    ? activeModalModel.existing?.code ?? "Código existente"
+                    : "Código TI automático"}
+                </h3>
+
+                {activeModalModel.totalSeries > 0 && (
+                  <p className="mt-1 text-[10px] font-black text-[#42746e]">
+                    {activeModalModel.totalSeries} series · {activeModalModel.totalPieces} prendas
+                  </p>
                 )}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setModelModalKey(null)}
+                className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[#6f655e] shadow-sm"
+              >
+                <X size={17} />
+              </button>
             </div>
 
-            <div className="p-4 sm:p-5">
-              <div className="grid grid-cols-2 gap-2 rounded-[17px] bg-[#f8f4f0] p-1.5">
-                <button
-                  type="button"
-                  onClick={() => setModelMode(model.key, "NEW")}
-                  className={`min-h-10 rounded-[13px] text-[10px] font-black ${
-                    model.mode === "NEW"
-                      ? "bg-white text-[#8f3a2e] shadow-sm"
-                      : "text-[#8b8078]"
-                  }`}
-                >
-                  Nuevo modelo
-                </button>
-
-                <button
-                  type="button"
-                  disabled={products.length === 0}
-                  onClick={() => setModelMode(model.key, "EXISTING")}
-                  className={`min-h-10 rounded-[13px] text-[10px] font-black disabled:opacity-30 ${
-                    model.mode === "EXISTING"
-                      ? "bg-white text-[#5a8b86] shadow-sm"
-                      : "text-[#8b8078]"
-                  }`}
-                >
-                  Ya existe
-                </button>
-              </div>
-
-              {model.mode === "EXISTING" ? (
-                <div className="relative mt-4">
-                  <select
-                    value={model.product_id}
-                    onChange={(event) => selectExistingProduct(model.key, event.target.value)}
-                    className="ti-input appearance-none pr-10"
-                  >
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.code} · {product.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#8b8078]"
-                  />
-                </div>
-              ) : (
-                <div className="mt-4 rounded-[16px] bg-[#fff7f1] px-4 py-3">
-                  <p className="text-[8px] font-black uppercase tracking-[.1em] text-[#b63a2c]">
-                    Código TI
-                  </p>
-                  <p className="mt-1 text-sm font-black text-[#8f3a2e]">
-                    Se generará automáticamente
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_118px]">
-                <div className="space-y-3">
-                  <Field label="Nombre que verá la clienta">
-                    <input
-                      value={model.name}
-                      onChange={(event) => updateModel(model.key, { name: event.target.value })}
-                      disabled={model.mode === "EXISTING"}
-                      placeholder="Ej. Conjunto Conejito"
-                      className="ti-input disabled:bg-[#f5f1ed]"
-                    />
-                  </Field>
-
-                  <Field label="Descripción breve">
-                    <input
-                      value={model.description}
-                      onChange={(event) =>
-                        updateModel(model.key, { description: event.target.value })
-                      }
-                      placeholder="Opcional para la web"
-                      className="ti-input"
-                    />
-                  </Field>
-                </div>
-
-                <div>
-                  <p className="mb-2 text-xs font-black">Foto portada</p>
-                  <label className="grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-[16px] border border-dashed border-[#d9c8bb] bg-[#fffaf6]">
-                    {model.cover_url ? (
+            {modelModalMode === "VIEW" ? (
+              <div className="space-y-5 p-4 sm:p-6">
+                <div className="grid gap-4 sm:grid-cols-[150px_1fr]">
+                  <div className="aspect-square overflow-hidden rounded-[18px] bg-[#f1e9e1]">
+                    {activeModalModel.cover_url ? (
                       <img
-                        src={model.cover_url}
-                        alt="Portada"
+                        src={activeModalModel.cover_url}
+                        alt={activeModalModel.name}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="flex flex-col items-center gap-1 text-[#5a8b86]">
-                        <Camera size={20} />
-                        <span className="text-[8px] font-black">Subir</span>
-                      </span>
+                      <div className="grid h-full place-items-center text-[#bda99b]">
+                        <ImagePlus size={28} />
+                      </div>
                     )}
+                  </div>
 
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadingKey === model.key}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) void uploadCover(model.key, file);
-                      }}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <InfoBox
+                      label="Modelo"
+                      value={activeModalModel.name || activeModalModel.existing?.name || "—"}
                     />
-                  </label>
+                    <InfoBox
+                      label="Tallas"
+                      value={activeModalModel.sizes.join(" · ") || "—"}
+                    />
+                    <InfoBox
+                      label="Series"
+                      value={String(activeModalModel.totalSeries || 0)}
+                    />
+                    <InfoBox
+                      label="Prendas"
+                      value={String(activeModalModel.totalPieces || 0)}
+                    />
+                    <InfoBox
+                      label="Costo proveedor / prenda"
+                      value={
+                        activeModalModel.supplierPieceOriginal > 0
+                          ? original(activeModalModel.supplierPieceOriginal, currency)
+                          : "—"
+                      }
+                    />
+                    <InfoBox
+                      label="Costo final puesto en almacén / prenda"
+                      value={
+                        activeModalModel.finalPiecePen > 0
+                          ? pen(activeModalModel.finalPiecePen)
+                          : "—"
+                      }
+                    />
+                    <InfoBox
+                      label="Costo final / serie"
+                      value={
+                        activeModalModel.finalSeriesPen > 0
+                          ? pen(activeModalModel.finalSeriesPen)
+                          : "—"
+                      }
+                    />
+                    <InfoBox
+                      label="Preventa sugerida"
+                      value={
+                        activeModalModel.suggestedPreorder > 0
+                          ? pen(activeModalModel.suggestedPreorder)
+                          : "—"
+                      }
+                    />
+                    <InfoBox
+                      label="Precio stock final"
+                      value={
+                        activeModalModel.stockPrice > 0
+                          ? pen(activeModalModel.stockPrice)
+                          : "—"
+                      }
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-5 rounded-[20px] border border-[#eaded3] bg-[#fffdfb] p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-black">Tallas de una serie</p>
-                    <p className="mt-1 text-[9px] text-[#8b8078]">
-                      Selecciona todas las tallas que trae una serie completa.
+                <div className="rounded-[18px] border border-[#eaded3] bg-white p-4">
+                  <p className="text-[9px] font-black uppercase text-[#8b8078]">Colores</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {activeModalModel.validColors.length > 0 ? (
+                      activeModalModel.validColors.map((color) => (
+                        <span
+                          key={`${activeModalModel.key}-${color.name}`}
+                          className="rounded-full bg-[#f8f4f0] px-3 py-2 text-[10px] font-black"
+                        >
+                          {color.name} · {color.qty} series
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-[#8b8078]">Sin colores registrados</span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setModelModalMode("EDIT")}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[17px] bg-[#fff6e9] px-4 text-sm font-black text-[#9b6510]"
+                >
+                  <Pencil size={15} />
+                  Editar este código
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 sm:p-6">
+                <div className="grid grid-cols-2 gap-2 rounded-[17px] bg-[#f8f4f0] p-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setModelMode(activeModalModel.key, "NEW")}
+                    className={`min-h-10 rounded-[13px] text-[10px] font-black ${
+                      activeModalModel.mode === "NEW"
+                        ? "bg-white text-[#8f3a2e] shadow-sm"
+                        : "text-[#8b8078]"
+                    }`}
+                  >
+                    Nuevo modelo
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={products.length === 0}
+                    onClick={() => setModelMode(activeModalModel.key, "EXISTING")}
+                    className={`min-h-10 rounded-[13px] text-[10px] font-black disabled:opacity-30 ${
+                      activeModalModel.mode === "EXISTING"
+                        ? "bg-white text-[#5a8b86] shadow-sm"
+                        : "text-[#8b8078]"
+                    }`}
+                  >
+                    Ya existe
+                  </button>
+                </div>
+
+                {activeModalModel.mode === "EXISTING" ? (
+                  <div className="relative mt-4">
+                    <select
+                      value={activeModalModel.product_id}
+                      onChange={(event) =>
+                        selectExistingProduct(activeModalModel.key, event.target.value)
+                      }
+                      className="ti-input appearance-none pr-10"
+                    >
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.code} · {product.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={15}
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#8b8078]"
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-[16px] bg-[#fff7f1] px-4 py-3">
+                    <p className="text-[8px] font-black uppercase tracking-[.1em] text-[#b63a2c]">
+                      Código TI
+                    </p>
+                    <p className="mt-1 text-sm font-black text-[#8f3a2e]">
+                      Se genera automáticamente al guardar la carga
                     </p>
                   </div>
-                  <span className="rounded-full bg-[#f4faf8] px-3 py-1.5 text-[9px] font-black text-[#42746e]">
-                    {model.piecesPerSeries} prendas / serie
-                  </span>
+                )}
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_140px]">
+                  <div className="space-y-3">
+                    <Field label="Nombre que verá la clienta">
+                      <input
+                        value={activeModalModel.name}
+                        onChange={(event) =>
+                          updateModel(activeModalModel.key, { name: event.target.value })
+                        }
+                        disabled={activeModalModel.mode === "EXISTING"}
+                        placeholder="Ej. Conjunto Conejito"
+                        className="ti-input disabled:bg-[#f5f1ed]"
+                      />
+                    </Field>
+
+                    <Field label="Descripción breve">
+                      <input
+                        value={activeModalModel.description}
+                        onChange={(event) =>
+                          updateModel(activeModalModel.key, {
+                            description: event.target.value,
+                          })
+                        }
+                        placeholder="Opcional para la web"
+                        className="ti-input"
+                      />
+                    </Field>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-black">Foto portada</p>
+                    <label className="grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-[16px] border border-dashed border-[#d9c8bb] bg-[#fffaf6]">
+                      {activeModalModel.cover_url ? (
+                        <img
+                          src={activeModalModel.cover_url}
+                          alt="Portada"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex flex-col items-center gap-1 text-[#5a8b86]">
+                          <Camera size={20} />
+                          <span className="text-[8px] font-black">Subir</span>
+                        </span>
+                      )}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingKey === activeModalModel.key}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadCover(activeModalModel.key, file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[1, 2, 3, 4, 5].map((start) => (
-                    <button
-                      key={start}
-                      type="button"
-                      onClick={() => setQuickRange(model.key, start)}
-                      className="rounded-full bg-[#fff0e9] px-3 py-2 text-[9px] font-black text-[#9b382b]"
-                    >
-                      {start}-{start + 1} a {start + 4}-{start + 5}
-                    </button>
-                  ))}
-                </div>
+                <div className="mt-5 rounded-[20px] border border-[#eaded3] bg-[#fffdfb] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black">Tallas de una serie</p>
+                      <p className="mt-1 text-[9px] text-[#8b8078]">
+                        Selecciona todas las tallas que trae una serie completa.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#f4faf8] px-3 py-1.5 text-[9px] font-black text-[#42746e]">
+                      {activeModalModel.piecesPerSeries} prendas / serie
+                    </span>
+                  </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {AGE_SIZES.map((size) => {
-                    const selected = model.sizes.includes(size);
-                    return (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {[1, 2, 3, 4, 5].map((start) => (
                       <button
-                        key={size}
+                        key={start}
                         type="button"
-                        onClick={() => toggleSize(model.key, size)}
-                        className={`rounded-full border px-3 py-2 text-[10px] font-black ${
-                          selected
-                            ? "border-[#8f3a2e] bg-[#8f3a2e] text-white"
-                            : "border-[#eaded3] bg-white text-[#6f655e]"
-                        }`}
+                        onClick={() => setQuickRange(activeModalModel.key, start)}
+                        className="rounded-full bg-[#fff0e9] px-3 py-2 text-[9px] font-black text-[#9b382b]"
                       >
-                        {size}
+                        {start}-{start + 1} a {start + 4}-{start + 5}
                       </button>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
 
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-[9px] font-black text-[#5a8b86]">
-                    Ver tallas bebé
-                  </summary>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {BABY_SIZES.map((size) => {
-                      const selected = model.sizes.includes(size);
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {AGE_SIZES.map((size) => {
+                      const selected = activeModalModel.sizes.includes(size);
                       return (
                         <button
                           key={size}
                           type="button"
-                          onClick={() => toggleSize(model.key, size)}
+                          onClick={() => toggleSize(activeModalModel.key, size)}
                           className={`rounded-full border px-3 py-2 text-[10px] font-black ${
                             selected
-                              ? "border-[#5a8b86] bg-[#5a8b86] text-white"
+                              ? "border-[#8f3a2e] bg-[#8f3a2e] text-white"
                               : "border-[#eaded3] bg-white text-[#6f655e]"
                           }`}
                         >
@@ -1180,121 +1473,214 @@ export function ChinaPurchaseForm({
                       );
                     })}
                   </div>
-                </details>
 
-                <div className="mt-4 flex gap-2">
-                  <input
-                    value={customSizes[model.key] ?? ""}
-                    onChange={(event) =>
-                      setCustomSizes((current) => ({
-                        ...current,
-                        [model.key]: event.target.value,
-                      }))
-                    }
-                    placeholder="Otra talla"
-                    className="ti-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addCustomSize(model.key)}
-                    className="grid min-w-12 place-items-center rounded-[16px] bg-[#f4faf8] text-[#42746e]"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
+                  <details className="mt-4">
+                    <summary className="cursor-pointer text-[9px] font-black text-[#5a8b86]">
+                      Ver tallas bebé
+                    </summary>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {BABY_SIZES.map((size) => {
+                        const selected = activeModalModel.sizes.includes(size);
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => toggleSize(activeModalModel.key, size)}
+                            className={`rounded-full border px-3 py-2 text-[10px] font-black ${
+                              selected
+                                ? "border-[#5a8b86] bg-[#5a8b86] text-white"
+                                : "border-[#eaded3] bg-white text-[#6f655e]"
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </details>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {model.sizes.map((size) => (
-                    <span
-                      key={size}
-                      className="inline-flex items-center gap-1 rounded-full bg-[#f7f2ec] px-3 py-1.5 text-[9px] font-black"
+                  <div className="mt-4 flex gap-2">
+                    <input
+                      value={customSizes[activeModalModel.key] ?? ""}
+                      onChange={(event) =>
+                        setCustomSizes((current) => ({
+                          ...current,
+                          [activeModalModel.key]: event.target.value,
+                        }))
+                      }
+                      placeholder="Otra talla"
+                      className="ti-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addCustomSize(activeModalModel.key)}
+                      className="grid min-w-12 place-items-center rounded-[16px] bg-[#f4faf8] text-[#42746e]"
                     >
-                      {size}
-                      <button type="button" onClick={() => toggleSize(model.key, size)}>
-                        <X size={10} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-black">Colores comprados</p>
-                    <p className="mt-1 text-[9px] text-[#8b8078]">
-                      Escribe cuántas series completas compró de cada color.
-                    </p>
+                      <Plus size={16} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => addColor(model.key)}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#fff6e9] px-3 py-2 text-[9px] font-black text-[#9b6510]"
-                  >
-                    <Plus size={12} />
-                    Otro color
-                  </button>
                 </div>
 
-                <div className="mt-3 space-y-2">
-                  {model.colors.map((color, colorIndex) => (
-                    <div
-                      key={color.key}
-                      className="grid grid-cols-[1fr_105px_auto] gap-2 rounded-[15px] border border-[#eaded3] p-2.5"
+                <div className="mt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black">Colores comprados</p>
+                      <p className="mt-1 text-[9px] text-[#8b8078]">
+                        Un mismo código puede tener varios colores; Tendencias los podrá surtir.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addColor(activeModalModel.key)}
+                      className="inline-flex items-center gap-1 rounded-full bg-[#fff6e9] px-3 py-2 text-[9px] font-black text-[#9b6510]"
                     >
-                      <input
-                        value={color.name}
-                        onChange={(event) =>
-                          updateColor(model.key, color.key, { name: event.target.value })
-                        }
-                        placeholder={`Color ${colorIndex + 1}`}
-                        className="h-10 min-w-0 rounded-[12px] border border-[#eaded3] px-3 text-xs font-black outline-none"
-                      />
+                      <Plus size={12} />
+                      Otro color
+                    </button>
+                  </div>
 
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={color.qty}
-                        onChange={(event) =>
-                          updateColor(model.key, color.key, {
-                            qty: cleanNumber(event.target.value).replace(/\..*$/, ""),
+                  <div className="mt-3 space-y-2">
+                    {activeModalModel.colors.map((color, colorIndex) => (
+                      <div
+                        key={color.key}
+                        className="grid grid-cols-[1fr_110px_auto] gap-2 rounded-[15px] border border-[#eaded3] p-2.5"
+                      >
+                        <input
+                          value={color.name}
+                          onChange={(event) =>
+                            updateColor(activeModalModel.key, color.key, {
+                              name: event.target.value,
+                            })
+                          }
+                          placeholder={`Color ${colorIndex + 1}`}
+                          className="h-10 min-w-0 rounded-[12px] border border-[#eaded3] px-3 text-xs font-black outline-none"
+                        />
+
+                        <NumberField
+                          value={color.qty}
+                          onChange={(value) =>
+                            updateColor(activeModalModel.key, color.key, {
+                              qty: value,
+                            })
+                          }
+                          placeholder="Series"
+                        />
+
+                        <button
+                          type="button"
+                          disabled={activeModalModel.colors.length === 1}
+                          onClick={() => removeColor(activeModalModel.key, color.key)}
+                          className="grid size-10 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c] disabled:opacity-25"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {activeModalModel.totalSeries > 0 && (
+                    <div className="mt-3 rounded-[16px] bg-[#edf7f5] px-4 py-3 text-sm font-black text-[#42746e]">
+                      {activeModalModel.totalSeries} series · {activeModalModel.totalPieces} prendas
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5 rounded-[20px] bg-[#fff7f1] p-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Field label={`Costo proveedor / prenda ${currency}`}>
+                      <NumberField
+                        value={activeModalModel.supplier_cost_piece_original}
+                        onChange={(value) =>
+                          updateModel(activeModalModel.key, {
+                            supplier_cost_piece_original: value,
                           })
                         }
-                        placeholder="Series"
-                        className="h-10 w-full rounded-[12px] border border-[#eaded3] px-3 text-center text-xs font-black outline-none"
+                        placeholder="Ej. 8.00"
                       />
+                    </Field>
 
-                      <button
-                        type="button"
-                        disabled={model.colors.length === 1}
-                        onClick={() => removeColor(model.key, color.key)}
-                        className="grid size-10 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c] disabled:opacity-25"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  ))}
+                    <Field label="Utilidad preventa %">
+                      <NumberField
+                        value={activeModalModel.preorder_margin_pct}
+                        onChange={(value) =>
+                          updateModel(activeModalModel.key, {
+                            preorder_margin_pct: value,
+                            preorder_price_is_manual: false,
+                          })
+                        }
+                        placeholder="20"
+                      />
+                      <p className="mt-1 text-[8px] text-[#8b8078]">Mínimo 20%</p>
+                    </Field>
+
+                    <Field label="Utilidad stock %">
+                      <NumberField
+                        value={activeModalModel.stock_margin_pct}
+                        onChange={(value) =>
+                          updateModel(activeModalModel.key, {
+                            stock_margin_pct: value,
+                            stock_price_is_manual: false,
+                          })
+                        }
+                        placeholder="30"
+                      />
+                      <p className="mt-1 text-[8px] text-[#8b8078]">Mínimo 20%</p>
+                    </Field>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <InfoBox
+                      label="Costo final / prenda"
+                      value={
+                        activeModalModel.finalPiecePen > 0
+                          ? pen(activeModalModel.finalPiecePen)
+                          : "Se calcula con todos los gastos"
+                      }
+                    />
+
+                    <InfoBox
+                      label="Preventa sugerida / serie"
+                      value={
+                        activeModalModel.suggestedPreorder > 0
+                          ? pen(activeModalModel.suggestedPreorder)
+                          : "Pendiente"
+                      }
+                    />
+
+                    <Field label="Precio stock final / serie">
+                      <NumberField
+                        value={
+                          activeModalModel.stock_price_is_manual
+                            ? activeModalModel.stock_price
+                            : activeModalModel.suggestedStock > 0
+                              ? activeModalModel.suggestedStock.toFixed(2)
+                              : ""
+                        }
+                        onChange={(value) =>
+                          updateModel(activeModalModel.key, {
+                            stock_price: value,
+                            stock_price_is_manual: true,
+                          })
+                        }
+                        placeholder="Se sugiere automáticamente"
+                      />
+                    </Field>
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-5 rounded-[20px] bg-[#fff7f1] p-4">
-                <Field label={`Costo proveedor por prenda · ${currency}`}>
-                  <NumberField
-                    value={model.supplier_cost_piece_original}
-                    onChange={(value) =>
-                      updateModel(model.key, { supplier_cost_piece_original: value })
-                    }
-                    placeholder="Ej. 8.00"
-                  />
-                </Field>
-                <p className="mt-2 text-[9px] leading-4 text-[#7f746c]">
-                  Aquí solo escribes lo que cuesta una prenda en este código. Los gastos de importación se reparten al final entre todas las prendas.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setModelModalKey(null)}
+                  className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-[17px] bg-[#b63a2c] px-5 text-sm font-black text-white"
+                >
+                  <Save size={15} />
+                  Guardar este código en la tabla
+                </button>
               </div>
-            </div>
-          </article>
-        ))}
-      </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <SectionTitle
         eyebrow="Gastos adicionales"
@@ -1658,6 +2044,24 @@ export function ChinaPurchaseForm({
         </div>
       </div>
     </form>
+  );
+}
+
+
+function InfoBox({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[16px] border border-[#eaded3] bg-white p-3">
+      <p className="text-[8px] font-black uppercase tracking-[.06em] text-[#8b8078]">
+        {label}
+      </p>
+      <p className="mt-1 text-[11px] font-black text-[#2c2825]">{value}</p>
+    </div>
   );
 }
 

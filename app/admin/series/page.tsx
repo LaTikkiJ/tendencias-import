@@ -5,6 +5,7 @@ import {
   PackageCheck,
   Settings2,
   Ship,
+  ShoppingCart,
 } from "lucide-react";
 
 import {
@@ -115,15 +116,23 @@ export default async function AdminSeriesPage() {
             </p>
           </div>
 
-          <Link
-            href="/admin/series/compras/nueva"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[17px] bg-[#b63a2c] px-5 text-xs font-black text-white sm:min-h-12 sm:text-sm"
-          >
-            <Ship
-              size={16}
-            />
-            Registrar compra
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              href="/admin/pedidos/nueva"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[17px] bg-[#5a8b86] px-5 text-xs font-black text-white sm:min-h-12 sm:text-sm"
+            >
+              <ShoppingCart size={16} />
+              Venta manual
+            </Link>
+
+            <Link
+              href="/admin/series/compras/nueva"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[17px] bg-[#b63a2c] px-5 text-xs font-black text-white sm:min-h-12 sm:text-sm"
+            >
+              <Ship size={16} />
+              Registrar compra
+            </Link>
+          </div>
         </div>
       </section>
 
