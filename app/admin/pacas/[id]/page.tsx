@@ -19,6 +19,8 @@ import {
   MediaManager,
 } from "@/components/admin/MediaManager";
 
+import PacaPriceEditor from "@/components/admin/PacaPriceEditor";
+
 import {
   createClient,
 } from "@/lib/supabase/server";
@@ -41,6 +43,7 @@ export default async function AdminPacaDetailPage({
   const [
     { data: category },
     { data: media },
+    { data: prices },
   ] = await Promise.all([
     supabase
       .from("paca_categories")
@@ -55,6 +58,12 @@ export default async function AdminPacaDetailPage({
       )
       .eq("category_id", id)
       .order("sort_order"),
+
+    supabase
+      .from("paca_category_prices")
+      .select("quantity,price_pen")
+      .eq("category_id", id)
+      .order("quantity"),
   ]);
 
   if (!category) {
@@ -157,6 +166,12 @@ export default async function AdminPacaDetailPage({
         </div>
       </section>
 
+      <PacaPriceEditor
+        categoryId={category.id}
+        slug={category.slug}
+        initialPrices={(prices ?? []) as any}
+      />
+
       {/* FORMULARIO */}
       <form
         action={updatePacaCategory}
@@ -229,23 +244,31 @@ export default async function AdminPacaDetailPage({
             </p>
           </div>
 
-          {/* CANTIDADES */}
+          {/* CANTIDADES FIJAS */}
           <div>
             <label className="mb-2 block text-sm font-black">
-              Cantidades
+              Cantidades de venta
             </label>
 
             <input
+              type="hidden"
               name="box_quantities"
-              className="ti-input"
-              defaultValue={(
-                category.box_quantities ??
-                []
-              ).join(", ")}
+              value="25, 50, 100"
             />
 
+            <div className="flex min-h-14 flex-wrap items-center gap-2 rounded-[16px] border border-[#eaded3] bg-[#fffaf6] px-3">
+              {[25, 50, 100].map((quantity) => (
+                <span
+                  key={quantity}
+                  className="rounded-full bg-white px-3 py-2 text-[10px] font-black shadow-sm"
+                >
+                  {quantity} prendas
+                </span>
+              ))}
+            </div>
+
             <p className="mt-2 text-xs text-[#8b8078]">
-              Ejemplo: 15, 25, 50, 100
+              Estas cantidades son fijas para Tendencias.
             </p>
           </div>
 

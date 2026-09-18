@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/store/Header";
 import { Footer } from "@/components/store/Footer";
 import { createClient } from "@/lib/supabase/server";
-import { MessageCircle } from "lucide-react";
+import { PackageOpen } from "lucide-react";
 import { PacaGallery } from "@/components/store/PacaGallery";
+import PacaOrderConfigurator from "@/components/store/PacaOrderConfigurator";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,22 @@ export default async function PacaDetailPage({
 
   if (!category) notFound();
 
-  const { data: media, count } = await supabase
+  const [{ data: media, count }, { data: prices }] = await Promise.all([
+    supabase
     .from("paca_media")
     .select("id,media_type,url,title,sort_order", { count: "exact" })
     .eq("category_id", category.id)
     .eq("active", true)
     .order("sort_order")
-    .range(0, 11);
+    .range(0, 11),
+
+    supabase
+      .from("paca_category_prices")
+      .select("quantity,price_pen")
+      .eq("category_id", category.id)
+      .eq("active", true)
+      .order("quantity"),
+  ]);
 
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
 
@@ -44,14 +54,25 @@ export default async function PacaDetailPage({
         <h1 className="mt-3 text-4xl font-black tracking-[-.04em] md:text-6xl">{category.name}</h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-[#7f746c]">{category.description}</p>
 
-        <div className="mt-8 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#fff0e9] px-4 py-2 text-[10px] font-black uppercase tracking-[.08em] text-[#9b382b]">
+            <PackageOpen size={13} />
+            Todo es a pedido
+          </span>
+
           {(category.size_ranges ?? []).map((size: string) => (
             <span key={size} className="ti-pill">{size}</span>
           ))}
-          {(category.box_quantities ?? []).map((q: number) => (
-            <span key={q} className="ti-pill">{q} prendas</span>
-          ))}
         </div>
+
+        <PacaOrderConfigurator
+          categoryId={category.id}
+          categoryName={category.name}
+          audience={category.audience}
+          sizeRanges={(category.size_ranges ?? []) as string[]}
+          prices={(prices ?? []) as any}
+          whatsappNumber={whatsapp}
+        />
 
         <div className="mt-10">
           <PacaGallery
@@ -61,18 +82,6 @@ export default async function PacaDetailPage({
           />
         </div>
 
-        <div className="sticky bottom-4 z-30 mt-10 flex justify-center">
-          <a
-            href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(
-              `Hola, quiero información de la paca: ${category.name}`
-            )}`}
-            target="_blank"
-            className="ti-button ti-button-primary shadow-2xl"
-          >
-            <MessageCircle size={18} />
-            Pedir esta paca por WhatsApp
-          </a>
-        </div>
       </main>
       <Footer />
     </>
