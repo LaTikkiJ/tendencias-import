@@ -240,6 +240,11 @@ export function ChinaPurchaseForm({
   ] = useState(1);
 
   const [
+    supplierTotalOriginal,
+    setSupplierTotalOriginal,
+  ] = useState(0);
+
+  const [
     freight,
     setFreight,
   ] = useState(0);
@@ -325,6 +330,13 @@ export function ChinaPurchaseForm({
       otherCosts || 0
     );
 
+  const safeExchangeRate =
+    currency === "PEN"
+      ? 1
+      : Number(
+          exchangeRate || 0
+        );
+
   const computed =
     useMemo(() => {
       const base =
@@ -399,19 +411,42 @@ export function ChinaPurchaseForm({
                 0
               );
 
-            const supplierCostPen =
+            const supplierCostSeriesOriginal =
               Number(
                 row.supplier_cost_series ||
                   0
-              ) *
-              Number(
-                exchangeRate ||
-                  1
               );
 
-            const subtotal =
+            const supplierCostSeriesPen =
+              supplierCostSeriesOriginal *
+              Number(
+                safeExchangeRate ||
+                  0
+              );
+
+            const supplierCostPieceOriginal =
+              pieces > 0
+                ? supplierCostSeriesOriginal /
+                  pieces
+                : 0;
+
+            const supplierCostPiecePen =
+              pieces > 0
+                ? supplierCostSeriesPen /
+                  pieces
+                : 0;
+
+            const supplierSubtotalOriginal =
               totalSeries *
-              supplierCostPen;
+              supplierCostSeriesOriginal;
+
+            const supplierSubtotalPen =
+              totalSeries *
+              supplierCostSeriesPen;
+
+            const totalPiecesRow =
+              totalSeries *
+              pieces;
 
             return {
               ...row,
@@ -420,73 +455,116 @@ export function ChinaPurchaseForm({
               pieces,
               validColors,
               totalSeries,
-              supplierCostPen,
-              subtotal,
+              totalPiecesRow,
+              supplierCostSeriesOriginal,
+              supplierCostSeriesPen,
+              supplierCostPieceOriginal,
+              supplierCostPiecePen,
+              supplierSubtotalOriginal,
+              supplierSubtotalPen,
             };
           }
         );
 
-      const merchandise =
+      const allPieces =
         base.reduce(
           (
             sum,
             row
           ) =>
             sum +
-            row.subtotal,
+            row.totalPiecesRow,
           0
         );
+
+      // Regla solicitada:
+      // todos los gastos de importación se dividen ENTRE TODAS LAS PRENDAS.
+      const extraPerPiecePen =
+        allPieces > 0
+          ? extraTotal /
+            allPieces
+          : 0;
+
+      const extraPerPieceOriginal =
+        safeExchangeRate > 0
+          ? extraPerPiecePen /
+            safeExchangeRate
+          : 0;
 
       return base.map(
         (row) => {
           const allocated =
-            merchandise >
-            0
-              ? extraTotal *
-                (
-                  row.subtotal /
-                  merchandise
-                )
+            extraPerPiecePen *
+            row.totalPiecesRow;
+
+          const allocatedOriginal =
+            safeExchangeRate > 0
+              ? allocated /
+                safeExchangeRate
               : 0;
 
-          const landedTotal =
-            row.subtotal +
-            allocated;
+          const landedPiecePen =
+            row.supplierCostPiecePen +
+            extraPerPiecePen;
 
-          const landedSeries =
-            row.totalSeries >
-            0
-              ? landedTotal /
-                row.totalSeries
-              : 0;
+          const landedPieceOriginal =
+            row.supplierCostPieceOriginal +
+            extraPerPieceOriginal;
 
-          const landedPiece =
-            row.pieces > 0
-              ? landedSeries /
-                row.pieces
-              : 0;
+          const landedSeriesPen =
+            landedPiecePen *
+            row.pieces;
+
+          const landedSeriesOriginal =
+            landedPieceOriginal *
+            row.pieces;
+
+          const landedTotalPen =
+            landedSeriesPen *
+            row.totalSeries;
+
+          const landedTotalOriginal =
+            landedSeriesOriginal *
+            row.totalSeries;
 
           return {
             ...row,
+            extraPerPiecePen,
+            extraPerPieceOriginal,
             allocated,
-            landedSeries,
-            landedPiece,
+            allocatedOriginal,
+            landedPiecePen,
+            landedPieceOriginal,
+            landedSeriesPen,
+            landedSeriesOriginal,
+            landedTotalPen,
+            landedTotalOriginal,
           };
         }
       );
     }, [
       rows,
       productMap,
-      exchangeRate,
+      safeExchangeRate,
       extraTotal,
     ]);
 
-  const merchandiseTotal =
+  const merchandiseTotalOriginal =
     computed.reduce(
-      (sum, row) =>
+      (
+        sum,
+        row
+      ) =>
         sum +
-        row.subtotal,
+        row.supplierSubtotalOriginal,
       0
+    );
+
+  const merchandiseTotalPen =
+    merchandiseTotalOriginal *
+    Number(
+      safeExchangeRate ||
+        0
     );
 
   const totalSeries =
@@ -501,14 +579,69 @@ export function ChinaPurchaseForm({
     computed.reduce(
       (sum, row) =>
         sum +
-        row.totalSeries *
-          row.pieces,
+        row.totalPiecesRow,
       0
     );
 
-  const totalPaid =
-    merchandiseTotal +
+  const extraPerPiecePen =
+    totalPieces > 0
+      ? extraTotal /
+        totalPieces
+      : 0;
+
+  const extraPerPieceOriginal =
+    safeExchangeRate > 0
+      ? extraPerPiecePen /
+        safeExchangeRate
+      : 0;
+
+  const declaredSupplierTotalOriginal =
+    Number(
+      supplierTotalOriginal ||
+        0
+    );
+
+  const declaredSupplierTotalPen =
+    declaredSupplierTotalOriginal *
+    Number(
+      safeExchangeRate ||
+        0
+    );
+
+  const supplierDifferenceOriginal =
+    declaredSupplierTotalOriginal -
+    merchandiseTotalOriginal;
+
+  const supplierBalanced =
+    declaredSupplierTotalOriginal > 0 &&
+    Math.abs(
+      supplierDifferenceOriginal
+    ) <= 0.1;
+
+  const totalPaidPen =
+    declaredSupplierTotalPen +
     extraTotal;
+
+  const totalPaidOriginal =
+    safeExchangeRate > 0
+      ? totalPaidPen /
+        safeExchangeRate
+      : 0;
+
+  const selectedCurrencySymbol =
+    currency === "USD"
+      ? "$"
+      : currency === "CNY"
+        ? "¥"
+        : "S/";
+
+  function moneyOriginal(
+    value: number
+  ) {
+    return `${selectedCurrencySymbol} ${Number(
+      value || 0
+    ).toFixed(2)}`;
+  }
 
   const payload = {
     purchase_date:
@@ -528,6 +661,12 @@ export function ChinaPurchaseForm({
             exchangeRate ||
               1
           ),
+
+    supplier_total_original:
+      Number(
+        supplierTotalOriginal ||
+          0
+      ),
 
     freight:
       Number(
@@ -1058,6 +1197,8 @@ export function ChinaPurchaseForm({
   const canSubmit =
     computed.length >
       0 &&
+    safeExchangeRate > 0 &&
+    supplierBalanced &&
     computed.every(
       (row) =>
         (
@@ -1241,6 +1382,92 @@ export function ChinaPurchaseForm({
           </div>
         )}
 
+        <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr]">
+          <div className="rounded-[18px] border border-[#eaded3] bg-[#fffdfb] p-4">
+            <label className="block text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
+              Total pagado al proveedor
+            </label>
+
+            <div className="mt-2 flex overflow-hidden rounded-[14px] border border-[#eaded3] bg-white">
+              <span className="grid min-w-11 place-items-center bg-[#f8f4f0] text-xs font-black text-[#8f3a2e]">
+                {selectedCurrencySymbol}
+              </span>
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={supplierTotalOriginal}
+                onChange={(e) =>
+                  setSupplierTotalOriginal(
+                    Number(
+                      e.target.value
+                    )
+                  )
+                }
+                className="h-12 min-w-0 flex-1 border-0 px-3 text-base font-black outline-none"
+                placeholder="0.00"
+              />
+            </div>
+
+            <p className="mt-2 text-[10px] font-bold text-[#5a8b86]">
+              Equivale a {money(declaredSupplierTotalPen)}
+            </p>
+          </div>
+
+          <div className="rounded-[18px] border border-[#eaded3] bg-[#fffdfb] p-4">
+            <p className="text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
+              Suma de los modelos
+            </p>
+
+            <p className="mt-3 text-lg font-black">
+              {moneyOriginal(merchandiseTotalOriginal)}
+            </p>
+
+            <p className="mt-1 text-[10px] font-bold text-[#7f746c]">
+              {money(merchandiseTotalPen)}
+            </p>
+          </div>
+
+          <div
+            className={`rounded-[18px] border p-4 ${
+              supplierBalanced
+                ? "border-[#cfe4df] bg-[#f1f8f6]"
+                : "border-[#f0d4ca] bg-[#fff4ef]"
+            }`}
+          >
+            <p className="text-[9px] font-black uppercase tracking-[.08em] text-[#8b8078]">
+              Control de cuadre
+            </p>
+
+            <p
+              className={`mt-3 text-lg font-black ${
+                supplierBalanced
+                  ? "text-[#42746e]"
+                  : "text-[#b63a2c]"
+              }`}
+            >
+              {supplierBalanced
+                ? "Cuadra perfecto ✓"
+                : `Diferencia ${moneyOriginal(supplierDifferenceOriginal)}`}
+            </p>
+
+            <p className="mt-1 text-[10px] leading-4 text-[#7f746c]">
+              El total del proveedor debe coincidir con la suma de todos los modelos antes de guardar.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-[18px] bg-[#fff8e9] p-4">
+          <p className="text-[10px] font-black text-[#9b6510]">
+            Gastos de importación
+          </p>
+
+          <p className="mt-1 text-[9px] leading-4 text-[#8b7146]">
+            Flete, impuestos, comisiones, transporte y otros se ingresan en soles. El sistema los divide por igual entre TODAS las prendas de esta carga.
+          </p>
+        </div>
+
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {[
             [
@@ -1309,6 +1536,12 @@ export function ChinaPurchaseForm({
                     className="h-11 min-w-0 flex-1 border-0 px-2 text-sm font-black outline-none"
                   />
                 </div>
+
+                {currency !== "PEN" && safeExchangeRate > 0 && (
+                  <p className="mt-1 text-[8px] font-bold text-[#8b8078]">
+                    ≈ {moneyOriginal(Number(value || 0) / safeExchangeRate)}
+                  </p>
+                )}
               </div>
             )
           )}
@@ -2068,91 +2301,130 @@ export function ChinaPurchaseForm({
 
                     {/* COSTOS */}
                     <div className="mt-5">
-                      <p className="text-xs font-black">
-                        Costos y precios
-                      </p>
+                      <div className="flex flex-wrap items-end justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-black">
+                            Costo de este modelo
+                          </p>
 
-                      <div className="mt-3 grid grid-cols-2 gap-3">
-                        <div className="col-span-2 sm:col-span-1">
-                          <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
-                            Proveedor / serie
-                          </label>
+                          <p className="mt-1 text-[9px] leading-4 text-[#8b8078]">
+                            Ingresa cuánto cobra el proveedor por UNA serie de este modelo.
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-[#f7f2ec] px-3 py-1.5 text-[9px] font-black text-[#6f655e]">
+                          {row.totalSeries} series · {row.totalPiecesRow} prendas
+                        </span>
+                      </div>
+
+                      <div className="mt-3">
+                        <label className="mb-2 block text-[9px] font-black uppercase text-[#8b8078]">
+                          Precio proveedor / serie ({currency})
+                        </label>
+
+                        <div className="flex overflow-hidden rounded-[16px] border border-[#eaded3] bg-white">
+                          <span className="grid min-w-11 place-items-center bg-[#f8f4f0] text-xs font-black text-[#8f3a2e]">
+                            {selectedCurrencySymbol}
+                          </span>
 
                           <input
                             type="number"
                             min="0"
                             step="0.01"
-                            value={
-                              row.supplier_cost_series
-                            }
-                            onChange={(
-                              e
-                            ) =>
+                            value={row.supplier_cost_series}
+                            onChange={(e) =>
                               updateRow(
                                 row.key,
                                 {
                                   supplier_cost_series:
                                     Number(
-                                      e
-                                        .target
-                                        .value
+                                      e.target.value
                                     ),
                                 }
                               )
                             }
-                            className="ti-input"
-                            placeholder="200"
+                            className="h-12 min-w-0 flex-1 border-0 px-3 text-base font-black outline-none"
+                            placeholder="0.00"
                           />
                         </div>
+                      </div>
 
-                        <div>
-                          <p className="text-[9px] font-black uppercase text-[#8b8078]">
-                            Prov. / prenda
+                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        <div className="rounded-[15px] bg-[#f8f4f0] p-3">
+                          <p className="text-[8px] font-black uppercase text-[#8b8078]">
+                            Proveedor / prenda
                           </p>
 
-                          <p className="mt-2 text-sm font-black">
-                            {money(
-                              row.supplierCostPen /
-                                row.pieces
-                            )}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-[9px] font-black uppercase text-[#9b6510]">
-                            Gastos asignados
+                          <p className="mt-1 text-xs font-black">
+                            {moneyOriginal(row.supplierCostPieceOriginal)}
                           </p>
 
-                          <p className="mt-2 text-sm font-black text-[#9b6510]">
-                            {money(
-                              row.allocated
-                            )}
+                          <p className="mt-1 text-[9px] font-bold text-[#7f746c]">
+                            {money(row.supplierCostPiecePen)}
                           </p>
                         </div>
 
-                        <div>
-                          <p className="text-[9px] font-black uppercase text-[#42746e]">
-                            Real / serie
+                        <div className="rounded-[15px] bg-[#f8f4f0] p-3">
+                          <p className="text-[8px] font-black uppercase text-[#8b8078]">
+                            Subtotal modelo
                           </p>
 
-                          <p className="mt-2 text-sm font-black text-[#42746e]">
-                            {money(
-                              row.landedSeries
-                            )}
+                          <p className="mt-1 text-xs font-black">
+                            {moneyOriginal(row.supplierSubtotalOriginal)}
+                          </p>
+
+                          <p className="mt-1 text-[9px] font-bold text-[#7f746c]">
+                            {money(row.supplierSubtotalPen)}
                           </p>
                         </div>
 
-                        <div>
-                          <p className="text-[9px] font-black uppercase text-[#42746e]">
-                            Real / prenda
+                        <div className="col-span-2 rounded-[15px] bg-[#fff8e9] p-3 sm:col-span-1">
+                          <p className="text-[8px] font-black uppercase text-[#9b6510]">
+                            Gastos extra / prenda
                           </p>
 
-                          <p className="mt-2 text-sm font-black text-[#42746e]">
-                            {money(
-                              row.landedPiece
-                            )}
+                          <p className="mt-1 text-xs font-black text-[#9b6510]">
+                            {moneyOriginal(row.extraPerPieceOriginal)}
+                          </p>
+
+                          <p className="mt-1 text-[9px] font-bold text-[#9b7b48]">
+                            {money(row.extraPerPiecePen)}
                           </p>
                         </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="rounded-[17px] bg-[#edf7f5] p-3.5">
+                          <p className="text-[8px] font-black uppercase text-[#42746e]">
+                            Costo final / prenda
+                          </p>
+
+                          <p className="mt-1 text-sm font-black text-[#42746e]">
+                            {moneyOriginal(row.landedPieceOriginal)}
+                          </p>
+
+                          <p className="mt-1 text-xs font-black text-[#42746e]">
+                            {money(row.landedPiecePen)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-[17px] bg-[#e7f2ef] p-3.5">
+                          <p className="text-[8px] font-black uppercase text-[#356a64]">
+                            Costo final / serie
+                          </p>
+
+                          <p className="mt-1 text-sm font-black text-[#356a64]">
+                            {moneyOriginal(row.landedSeriesOriginal)}
+                          </p>
+
+                          <p className="mt-1 text-xs font-black text-[#356a64]">
+                            {money(row.landedSeriesPen)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 rounded-[14px] bg-[#fffdfb] px-3 py-2 text-[9px] leading-4 text-[#7f746c]">
+                        A este modelo se le asignan {money(row.allocated)} de gastos porque tiene {row.totalPiecesRow} prendas. Todos reciben el mismo gasto extra por prenda.
                       </div>
                     </div>
 
@@ -2227,16 +2499,18 @@ export function ChinaPurchaseForm({
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <div className="rounded-[20px] bg-white p-4 shadow-sm">
           <p className="text-[9px] font-black uppercase text-[#8b8078]">
-            Mercadería
+            Proveedor
           </p>
 
           <p className="mt-2 text-lg font-black">
-            {money(
-              merchandiseTotal
-            )}
+            {moneyOriginal(declaredSupplierTotalOriginal)}
+          </p>
+
+          <p className="mt-1 text-[9px] font-bold text-[#7f746c]">
+            {money(declaredSupplierTotalPen)}
           </p>
         </div>
 
@@ -2246,21 +2520,43 @@ export function ChinaPurchaseForm({
           </p>
 
           <p className="mt-2 text-lg font-black text-[#d39218]">
-            {money(
-              extraTotal
+            {money(extraTotal)}
+          </p>
+
+          <p className="mt-1 text-[9px] font-bold text-[#9b7b48]">
+            {moneyOriginal(
+              safeExchangeRate > 0
+                ? extraTotal / safeExchangeRate
+                : 0
             )}
           </p>
         </div>
 
         <div className="col-span-2 rounded-[20px] bg-[#8f3a2e] p-4 text-white shadow-sm lg:col-span-1">
           <p className="text-[9px] font-black uppercase text-white/70">
-            Total pagado
+            Costo total importado
           </p>
 
           <p className="mt-2 text-xl font-black">
-            {money(
-              totalPaid
-            )}
+            {money(totalPaidPen)}
+          </p>
+
+          <p className="mt-1 text-[9px] font-bold text-white/75">
+            {moneyOriginal(totalPaidOriginal)}
+          </p>
+        </div>
+
+        <div className="rounded-[20px] bg-[#fff8e9] p-4 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-[#9b6510]">
+            Extra por prenda
+          </p>
+
+          <p className="mt-2 text-lg font-black text-[#9b6510]">
+            {money(extraPerPiecePen)}
+          </p>
+
+          <p className="mt-1 text-[9px] font-bold text-[#9b7b48]">
+            {moneyOriginal(extraPerPieceOriginal)}
           </p>
         </div>
 
@@ -2270,9 +2566,7 @@ export function ChinaPurchaseForm({
           </p>
 
           <p className="mt-2 text-lg font-black text-[#5a8b86]">
-            {
-              totalSeries
-            }
+            {totalSeries}
           </p>
         </div>
 
@@ -2282,12 +2576,16 @@ export function ChinaPurchaseForm({
           </p>
 
           <p className="mt-2 text-lg font-black text-[#5a8b86]">
-            {
-              totalPieces
-            }
+            {totalPieces}
           </p>
         </div>
       </section>
+
+      {!supplierBalanced && (
+        <div className="rounded-[18px] border border-[#f0d4ca] bg-[#fff4ef] p-4 text-xs font-bold text-[#a33d31]">
+          Para guardar, el total pagado al proveedor debe coincidir con la suma de los precios de todos los modelos. Diferencia actual: {moneyOriginal(supplierDifferenceOriginal)}.
+        </div>
+      )}
 
       <section className="rounded-[22px] border border-[#eaded3] bg-white p-4">
         <textarea
