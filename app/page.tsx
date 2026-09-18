@@ -217,7 +217,7 @@ export default async function HomePage() {
         </section>
 
         {/* SERIES */}
-        <section className="bg-white/50 py-12 sm:py-14">
+        <section className="bg-white/50 py-8 sm:py-10">
           <div className="ti-container">
             <div className="flex items-end justify-between gap-4">
               <div>
