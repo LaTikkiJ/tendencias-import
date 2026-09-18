@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 type PayloadItem = {
+  product_id?: string | null;
   cover_url?: string | null;
 };
 
@@ -64,21 +65,31 @@ export async function createChinaPurchaseV10(formData: FormData) {
   for (const item of purchaseItems ?? []) {
     const source = rows[Number(item.line_no) - 1];
     const cover = source?.cover_url?.trim();
+    const wasCreatedInThisPurchase = !source?.product_id;
 
-    if (!cover) {
-      continue;
+    const productPatch: {
+      cover_url?: string;
+      created_in_purchase_id?: string;
+      updated_at: string;
+    } = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (cover) {
+      productPatch.cover_url = cover;
     }
 
-    const { error: coverError } = await supabase
+    if (wasCreatedInThisPurchase) {
+      productPatch.created_in_purchase_id = String(purchaseId);
+    }
+
+    const { error: productError } = await supabase
       .from("series_products")
-      .update({
-        cover_url: cover,
-        updated_at: new Date().toISOString(),
-      })
+      .update(productPatch)
       .eq("id", item.product_id);
 
-    if (coverError) {
-      throw new Error(coverError.message);
+    if (productError) {
+      throw new Error(productError.message);
     }
   }
 
@@ -223,4 +234,56 @@ export async function markChinaPurchaseReceivedV10(formData: FormData) {
   revalidatePath("/admin/series/compras");
   revalidatePath("/admin/series");
   revalidatePath("/series");
+}
+
+
+export type DeleteChinaPurchaseState = {
+  error?: string;
+};
+
+export async function deleteChinaPurchaseV11(
+  _previousState: DeleteChinaPurchaseState,
+  formData: FormData,
+): Promise<DeleteChinaPurchaseState> {
+  const supabase = await createClient();
+
+  const purchaseId = String(formData.get("purchase_id") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  const deleteCreatedProducts =
+    String(formData.get("delete_created_products") ?? "") === "on";
+
+  if (!purchaseId) {
+    return {
+      error: "No se encontró la compra.",
+    };
+  }
+
+  if (confirmation.trim().toUpperCase() !== "ELIMINAR") {
+    return {
+      error: "Escribe ELIMINAR para confirmar.",
+    };
+  }
+
+  const { error } = await supabase.rpc(
+    "delete_series_china_purchase_v11",
+    {
+      p_purchase_id: purchaseId,
+      p_confirmation: confirmation,
+      p_delete_created_products: deleteCreatedProducts,
+    },
+  );
+
+  if (error) {
+    return {
+      error: error.message,
+    };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/series");
+  revalidatePath("/admin");
+  revalidatePath("/admin/series");
+  revalidatePath("/admin/series/compras");
+
+  redirect("/admin/series/compras?deleted=1");
 }

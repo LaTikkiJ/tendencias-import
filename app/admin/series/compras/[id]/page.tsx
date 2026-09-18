@@ -16,6 +16,7 @@ import {
   markChinaPurchaseReceivedV10,
   setChinaPurchaseStatusV10,
 } from "@/app/admin/series/compras/actions-v10";
+import DeleteChinaPurchaseButton from "@/components/admin/DeleteChinaPurchaseButton";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -154,6 +155,11 @@ export default async function ChinaPurchaseDetailPage({
                 </button>
               </form>
             )}
+
+            <DeleteChinaPurchaseButton
+              purchaseId={purchase.id}
+              purchaseCode={purchase.code}
+            />
           </div>
         </div>
 
