@@ -107,6 +107,14 @@ export default async function PacaDetailPage({
           ))}
         </div>
 
+        <div className="mt-10">
+          <PacaGallery
+            categoryId={category.id}
+            initialMedia={(media ?? []) as any}
+            initialHasMore={Number(count ?? 0) > 12}
+          />
+        </div>
+
         <PacaOrderConfigurator
           categoryId={category.id}
           categoryName={category.name}
@@ -115,14 +123,6 @@ export default async function PacaDetailPage({
           prices={(prices ?? []) as any}
           whatsappNumber={whatsapp}
         />
-
-        <div className="mt-10">
-          <PacaGallery
-            categoryId={category.id}
-            initialMedia={(media ?? []) as any}
-            initialHasMore={Number(count ?? 0) > 12}
-          />
-        </div>
 
         <PacaCategorySuggestions
           items={suggestions as any}

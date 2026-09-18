@@ -65,7 +65,7 @@ export function PacaGallery({
             className="overflow-hidden rounded-[20px] border border-[#eaded3] bg-white shadow-sm"
           >
             {item.media_type === "video" ? (
-              <div className="relative aspect-[4/5] bg-[#201d1b]">
+              <div className="relative aspect-square bg-[#201d1b]">
                 {playing[item.id] ? (
                   <video
                     src={item.url}
@@ -73,7 +73,7 @@ export function PacaGallery({
                     autoPlay
                     playsInline
                     preload="metadata"
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   <button
@@ -98,7 +98,7 @@ export function PacaGallery({
                 </span>
               </div>
             ) : (
-              <div className="aspect-[4/5] bg-[#eee3d9]">
+              <div className="aspect-square bg-[#eee3d9]">
                 <img
                   src={item.url}
                   alt={item.title ?? "Paca Tendencias Import"}

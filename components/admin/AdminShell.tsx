@@ -12,16 +12,20 @@ import {
   PackageCheck,
   Ship,
   BarChart3,
+  Bell,
+  MessagesSquare,
 } from "lucide-react";
 import { logout } from "@/app/admin/actions";
 
 const navItems = [
   { href: "/admin", label: "Panel", icon: LayoutDashboard },
   { href: "/admin/pacas", label: "Pacas", icon: Boxes },
+  { href: "/admin/pacas/solicitudes", label: "Solicitudes Pacas", icon: MessagesSquare },
   { href: "/admin/series/compras", label: "Compras China", icon: Ship },
   { href: "/admin/series", label: "Inventario Series", icon: PackageCheck },
   { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardList },
   { href: "/admin/series/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell },
   { href: "/admin/configuracion/pagos", label: "Cuentas de pago", icon: CreditCard },
 ];
 
@@ -30,6 +34,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   function isActive(href: string) {
     if (href === "/admin") return pathname === "/admin";
+    if (href === "/admin/pacas") {
+      return pathname === "/admin/pacas" ||
+        (
+          pathname.startsWith("/admin/pacas/") &&
+          !pathname.startsWith("/admin/pacas/solicitudes")
+        );
+    }
     if (href === "/admin/series") {
       return pathname === "/admin/series" ||
         (

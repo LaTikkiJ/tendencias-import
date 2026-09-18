@@ -46,7 +46,7 @@ export function PacaCategorySuggestions({
             href={`/pacas/${item.slug}`}
             className="group overflow-hidden rounded-[20px] border border-[#eaded3] bg-white shadow-sm"
           >
-            <div className="aspect-[4/5] overflow-hidden bg-[#eee3d9]">
+            <div className="aspect-square overflow-hidden bg-[#eee3d9]">
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
