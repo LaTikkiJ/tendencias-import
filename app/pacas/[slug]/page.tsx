@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PackageOpen } from "lucide-react";
 import { PacaGallery } from "@/components/store/PacaGallery";
 import PacaOrderConfigurator from "@/components/store/PacaOrderConfigurator";
+import { PacaCategorySuggestions } from "@/components/store/PacaCategorySuggestions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +26,18 @@ export default async function PacaDetailPage({
 
   if (!category) notFound();
 
-  const [{ data: media, count }, { data: prices }] = await Promise.all([
+  const [
+    { data: media, count },
+    { data: prices },
+    { data: suggestionCategories },
+  ] = await Promise.all([
     supabase
-    .from("paca_media")
-    .select("id,media_type,url,title,sort_order", { count: "exact" })
-    .eq("category_id", category.id)
-    .eq("active", true)
-    .order("sort_order")
-    .range(0, 11),
+      .from("paca_media")
+      .select("id,media_type,url,title,sort_order", { count: "exact" })
+      .eq("category_id", category.id)
+      .eq("active", true)
+      .order("sort_order")
+      .range(0, 11),
 
     supabase
       .from("paca_category_prices")
@@ -40,7 +45,44 @@ export default async function PacaDetailPage({
       .eq("category_id", category.id)
       .eq("active", true)
       .order("quantity"),
+
+    supabase
+      .from("paca_categories")
+      .select("id,slug,name,audience")
+      .eq("active", true)
+      .neq("id", category.id)
+      .limit(8),
   ]);
+
+  const suggestionIds = (suggestionCategories ?? []).map(
+    (item) => item.id,
+  );
+
+  const { data: suggestionMedia } =
+    suggestionIds.length > 0
+      ? await supabase
+          .from("paca_media")
+          .select("category_id,url,media_type,sort_order")
+          .in("category_id", suggestionIds)
+          .eq("active", true)
+          .eq("media_type", "image")
+          .order("sort_order")
+      : { data: [] as any[] };
+
+  const firstImageByCategory = new Map<string, string>();
+
+  for (const item of suggestionMedia ?? []) {
+    if (!firstImageByCategory.has(item.category_id)) {
+      firstImageByCategory.set(item.category_id, item.url);
+    }
+  }
+
+  const suggestions = (suggestionCategories ?? [])
+    .slice(0, 4)
+    .map((item) => ({
+      ...item,
+      imageUrl: firstImageByCategory.get(item.id) ?? null,
+    }));
 
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
 
@@ -81,6 +123,10 @@ export default async function PacaDetailPage({
             initialHasMore={Number(count ?? 0) > 12}
           />
         </div>
+
+        <PacaCategorySuggestions
+          items={suggestions as any}
+        />
 
       </main>
       <Footer />
