@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Minus, Plus, ShoppingBag, Trash2, X, MessageCircle } from "lucide-react";
+import {
+  MessageCircle,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Trash2,
+  X,
+} from "lucide-react";
 
 type SeriesItem = {
   id: string;
@@ -15,7 +22,9 @@ type SeriesItem = {
   sizes: string[];
 };
 
-type CartLine = SeriesItem & { qty: number };
+type CartLine = SeriesItem & {
+  qty: number;
+};
 
 export function SeriesShop({
   items,
@@ -30,18 +39,33 @@ export function SeriesShop({
   const lines = Object.values(cart);
 
   const total = useMemo(
-    () => lines.reduce((sum, line) => sum + Number(line.price) * line.qty, 0),
+    () =>
+      lines.reduce(
+        (sum, line) => sum + Number(line.price) * line.qty,
+        0
+      ),
     [lines]
   );
 
   function change(item: SeriesItem, delta: number) {
     setCart((old) => {
       const current = old[item.id]?.qty ?? 0;
-      const next = Math.max(0, Math.min(item.series_available, current + delta));
+
+      const next = Math.max(
+        0,
+        Math.min(item.series_available, current + delta)
+      );
+
       const copy = { ...old };
 
-      if (next === 0) delete copy[item.id];
-      else copy[item.id] = { ...item, qty: next };
+      if (next === 0) {
+        delete copy[item.id];
+      } else {
+        copy[item.id] = {
+          ...item,
+          qty: next,
+        };
+      }
 
       return copy;
     });
@@ -56,16 +80,19 @@ export function SeriesShop({
   }
 
   function sendToWhatsApp() {
-    if (!lines.length) return;
+    if (!lines.length) {
+      return;
+    }
 
     const detail = lines
       .map((line, index) => {
         const sizes = (line.sizes ?? []).join(", ");
+
         return `${index + 1}. *${line.code} - ${line.name}*
-   Cantidad: ${line.qty} ${line.qty === 1 ? "serie" : "series"}
-   Tallas: ${sizes || "Consultar"}
-   Precio: S/ ${Number(line.price).toFixed(2)} c/u
-   Subtotal: S/ ${(Number(line.price) * line.qty).toFixed(2)}`;
+Cantidad: ${line.qty} ${line.qty === 1 ? "serie" : "series"}
+Tallas: ${sizes || "Consultar"}
+Precio: S/ ${Number(line.price).toFixed(2)} c/u
+Subtotal: S/ ${(Number(line.price) * line.qty).toFixed(2)}`;
       })
       .join("\n\n");
 
@@ -78,9 +105,10 @@ ${detail}
 
 ¿Me confirman disponibilidad y cómo continúo con mi pedido?`;
 
-    const cleanNumber = whatsappNumber.replace(/\D/g, "");
+    const number = whatsappNumber.replace(/\D/g, "");
+
     window.open(
-      `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`,
+      `https://wa.me/${number}?text=${encodeURIComponent(message)}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -88,74 +116,85 @@ ${detail}
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((item) => {
           const qty = cart[item.id]?.qty ?? 0;
 
           return (
-            <article key={item.id} className="ti-card overflow-hidden">
-              <div
-                className="aspect-[4/5] bg-[#efe5dc] bg-cover bg-center"
-                style={
-                  item.cover_url
-                    ? { backgroundImage: `url(${item.cover_url})` }
-                    : {}
-                }
-              />
-
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[11px] font-black tracking-[.16em] text-[#5a8b86]">
-                      {item.code}
-                    </p>
-                    <h2 className="mt-1 font-black">{item.name}</h2>
+            <article
+              key={item.id}
+              className="overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_8px_24px_rgba(100,70,40,.05)]"
+            >
+              <div className="relative aspect-[4/5] overflow-hidden bg-[#efe5dc]">
+                {item.cover_url ? (
+                  <img
+                    src={item.cover_url}
+                    alt={item.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full place-items-center">
+                    <ShoppingBag size={26} className="text-[#5a8b86]" />
                   </div>
+                )}
 
-                  <span className="rounded-full bg-[#eef7f5] px-2 py-1 text-[10px] font-black text-[#42746e]">
-                    {item.series_available} disp.
-                  </span>
-                </div>
+                <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-1 text-[8px] font-black tracking-[.1em] text-[#5a8b86]">
+                  {item.code}
+                </span>
 
-                <p className="mt-3 text-lg font-black text-[#b63a2c]">
+                <span className="absolute right-2 top-2 rounded-full bg-[#edf8f5] px-2 py-1 text-[8px] font-black text-[#42746e]">
+                  {item.series_available} disp.
+                </span>
+              </div>
+
+              <div className="p-3 sm:p-4">
+                <h2 className="line-clamp-2 text-[14px] font-black leading-5 sm:text-[16px]">
+                  {item.name}
+                </h2>
+
+                <p className="mt-1.5 text-[16px] font-black text-[#b63a2c]">
                   S/ {Number(item.price).toFixed(2)}
                 </p>
 
-                <p className="mt-1 text-xs text-[#7f746c]">
+                <p className="mt-1 truncate text-[9px] font-bold text-[#8b8078]">
                   {(item.sizes ?? []).join(" · ")}
                 </p>
 
-                <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-[#7f746c]">
-                  {item.status === "preorder" ? "Preventa" : "Entrega inmediata"}
+                <p className="mt-2 text-[8px] font-black uppercase tracking-[.1em] text-[#5a8b86]">
+                  {item.status === "preorder"
+                    ? "Preventa"
+                    : "Entrega inmediata"}
                 </p>
 
                 {qty === 0 ? (
                   <button
                     onClick={() => change(item, 1)}
-                    className="ti-button ti-button-soft mt-4 w-full"
+                    className="mt-3 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-[14px] bg-[#fff0e9] text-[10px] font-black text-[#9b382b] transition hover:bg-[#b63a2c] hover:text-white"
                   >
-                    <ShoppingBag size={17} />
-                    Agregar al carrito
+                    <ShoppingBag size={13} />
+                    Agregar
                   </button>
                 ) : (
-                  <div className="mt-4 flex items-center justify-between rounded-full border border-[#eaded3] bg-white p-1">
+                  <div className="mt-3 flex items-center justify-between rounded-[14px] border border-[#eaded3] bg-[#fffaf6] p-1">
                     <button
                       onClick={() => change(item, -1)}
-                      className="grid size-9 place-items-center rounded-full"
+                      className="grid size-8 place-items-center"
                       aria-label="Quitar una serie"
                     >
-                      <Minus size={16} />
+                      <Minus size={13} />
                     </button>
 
-                    <span className="font-black">{qty}</span>
+                    <span className="text-sm font-black">
+                      {qty}
+                    </span>
 
                     <button
                       onClick={() => change(item, 1)}
                       disabled={qty >= item.series_available}
-                      className="grid size-9 place-items-center rounded-full disabled:opacity-35"
+                      className="grid size-8 place-items-center disabled:opacity-30"
                       aria-label="Agregar una serie"
                     >
-                      <Plus size={16} />
+                      <Plus size={13} />
                     </button>
                   </div>
                 )}
@@ -168,22 +207,25 @@ ${detail}
       {lines.length > 0 && (
         <button
           onClick={() => setOpen(true)}
-          className="ti-button ti-button-primary fixed bottom-5 left-1/2 z-40 -translate-x-1/2 shadow-2xl"
+          className="fixed bottom-5 left-1/2 z-40 flex min-h-12 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[#b63a2c] px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(182,58,44,.28)]"
         >
-          <ShoppingBag size={18} />
-          Mi carrito · {lines.reduce((sum, x) => sum + x.qty, 0)}
+          <ShoppingBag size={17} />
+          Mi carrito · {lines.reduce((sum, item) => sum + item.qty, 0)}
         </button>
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/35 p-0 sm:place-items-center sm:p-4">
-          <div className="w-full max-w-xl rounded-t-[28px] bg-[#fffaf5] p-5 shadow-2xl sm:rounded-[28px]">
+        <div className="fixed inset-0 z-50 grid place-items-end bg-black/35 sm:place-items-center sm:p-4">
+          <div className="w-full max-w-xl rounded-t-[28px] bg-[#fffaf6] p-5 shadow-2xl sm:rounded-[28px]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black tracking-[.15em] text-[#5a8b86]">
-                  TU CARRITO
+                <p className="text-[9px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
+                  Tu carrito
                 </p>
-                <h3 className="mt-1 text-2xl font-black">Series seleccionadas</h3>
+
+                <h3 className="mt-1 text-2xl font-black">
+                  Series seleccionadas
+                </h3>
               </div>
 
               <button
@@ -195,19 +237,23 @@ ${detail}
               </button>
             </div>
 
-            <div className="mt-5 max-h-[46vh] space-y-2 overflow-auto">
+            <div className="mt-5 max-h-[45vh] space-y-2 overflow-auto">
               {lines.map((line) => (
                 <div
                   key={line.id}
-                  className="rounded-[20px] border border-[#eaded3] bg-white p-4"
+                  className="rounded-[18px] border border-[#eaded3] bg-white p-3"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-black tracking-[.14em] text-[#5a8b86]">
+                      <p className="text-[9px] font-black text-[#5a8b86]">
                         {line.code}
                       </p>
-                      <p className="mt-1 font-black">{line.name}</p>
-                      <p className="mt-1 text-xs text-[#7f746c]">
+
+                      <p className="mt-1 text-sm font-black">
+                        {line.name}
+                      </p>
+
+                      <p className="mt-1 text-[10px] font-bold text-[#8b8078]">
                         {(line.sizes ?? []).join(" · ")}
                       </p>
                     </div>
@@ -217,29 +263,35 @@ ${detail}
                       className="grid size-9 place-items-center rounded-full bg-[#fff0eb] text-[#b63a2c]"
                       aria-label="Eliminar del carrito"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center rounded-full border border-[#eaded3] p-1">
                       <button
                         onClick={() => change(line, -1)}
-                        className="grid size-8 place-items-center rounded-full"
+                        className="grid size-8 place-items-center"
+                        aria-label="Quitar una serie"
                       >
-                        <Minus size={15} />
+                        <Minus size={13} />
                       </button>
-                      <span className="min-w-9 text-center font-black">{line.qty}</span>
+
+                      <span className="min-w-8 text-center font-black">
+                        {line.qty}
+                      </span>
+
                       <button
                         onClick={() => change(line, 1)}
                         disabled={line.qty >= line.series_available}
-                        className="grid size-8 place-items-center rounded-full disabled:opacity-35"
+                        className="grid size-8 place-items-center disabled:opacity-30"
+                        aria-label="Agregar una serie"
                       >
-                        <Plus size={15} />
+                        <Plus size={13} />
                       </button>
                     </div>
 
-                    <b>
+                    <b className="text-[#b63a2c]">
                       S/ {(Number(line.price) * line.qty).toFixed(2)}
                     </b>
                   </div>
@@ -247,21 +299,26 @@ ${detail}
               ))}
             </div>
 
-            <div className="mt-5 rounded-[20px] bg-white p-4">
-              <div className="flex items-center justify-between">
+            <div className="mt-4 rounded-[18px] bg-white p-4">
+              <div className="flex justify-between">
                 <span className="text-sm font-bold text-[#7f746c]">
                   Total referencial
                 </span>
-                <b className="text-xl">S/ {total.toFixed(2)}</b>
+
+                <b className="text-xl">
+                  S/ {total.toFixed(2)}
+                </b>
               </div>
-              <p className="mt-2 text-xs leading-5 text-[#7f746c]">
-                El carrito no reserva stock. Sofía confirmará disponibilidad final por WhatsApp.
+
+              <p className="mt-2 text-[11px] leading-5 text-[#7f746c]">
+                El carrito no reserva stock. Tendencias Import confirmará la
+                disponibilidad final por WhatsApp.
               </p>
             </div>
 
             <button
               onClick={sendToWhatsApp}
-              className="ti-button ti-button-primary mt-4 w-full"
+              className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[17px] bg-[#b63a2c] text-sm font-black text-white"
             >
               <MessageCircle size={18} />
               Enviar carrito por WhatsApp
