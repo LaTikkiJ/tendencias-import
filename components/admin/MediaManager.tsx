@@ -20,6 +20,44 @@ type Props = {
   currentCover?: string | null;
 };
 
+
+async function optimizeImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  if (file.type === "image/svg+xml" || file.type === "image/gif") return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1800;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.82),
+    );
+
+    if (!blob) return file;
+
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    return new File([blob], `${baseName}.webp`, {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
+}
+
 export function MediaManager({
   ownerType,
   ownerId,
@@ -56,11 +94,15 @@ export function MediaManager({
 
     try {
       for (let index = 0; index < selected.length; index++) {
-        const file = selected[index];
+        const originalFile = selected[index];
 
-        if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+        if (!originalFile.type.startsWith("image/") && !originalFile.type.startsWith("video/")) {
           continue;
         }
+
+        const file = originalFile.type.startsWith("image/")
+          ? await optimizeImage(originalFile)
+          : originalFile;
 
         const ext = file.name.split(".").pop() ?? "file";
         const base = cleanName(file.name.replace(/\.[^/.]+$/, ""));
@@ -70,7 +112,7 @@ export function MediaManager({
         const { error: uploadError } = await supabase.storage
           .from("catalog-media")
           .upload(storagePath, file, {
-            cacheControl: "3600",
+            cacheControl: "31536000",
             upsert: false,
           });
 
@@ -198,7 +240,7 @@ export function MediaManager({
             Fotos, collages y videos
           </h2>
           <p className="mt-2 text-sm text-[#7f746c]">
-            La primera imagen se usa como portada automáticamente. Después puedes cambiarla.
+            Puedes subir todas las fotos y videos que necesites. Las fotos se reducen y convierten a WebP antes de subir para ahorrar espacio; los videos se cargan directo a Storage sin pasar por Vercel.
           </p>
         </div>
 
@@ -281,13 +323,15 @@ export function MediaManager({
                       src={item.url}
                       controls
                       playsInline
-                      preload="metadata"
+                      preload="none"
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <img
                       src={item.url}
                       alt={item.title ?? "Imagen"}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   )}

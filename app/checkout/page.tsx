@@ -48,7 +48,11 @@ export default async function CheckoutPage() {
         </section>
 
         <section className="ti-container py-8 sm:py-10">
-          <CheckoutForm products={(products ?? []) as any} paymentAccounts={(paymentAccounts ?? []) as any} />
+          <CheckoutForm
+            products={(products ?? []) as any}
+            paymentAccounts={(paymentAccounts ?? []) as any}
+            whatsappNumber={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""}
+          />
         </section>
       </main>
       <Footer />

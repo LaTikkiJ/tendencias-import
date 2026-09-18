@@ -65,6 +65,7 @@ export default async function ChinaPurchasesPage() {
       total_series,
       total_pieces,
       effective_exchange_rate,
+      cost_status,
       status,
       created_at
     `)
@@ -158,9 +159,18 @@ export default async function ChinaPurchasesPage() {
                     </p>
                   </div>
 
-                  <span className={`rounded-full px-3 py-1.5 text-[9px] font-black ${statusClass(purchase.status)}`}>
-                    {statusName(purchase.status)}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className={`rounded-full px-3 py-1.5 text-[9px] font-black ${statusClass(purchase.status)}`}>
+                      {statusName(purchase.status)}
+                    </span>
+                    <span className={`rounded-full px-2.5 py-1 text-[8px] font-black ${
+                      purchase.cost_status === "CLOSED"
+                        ? "bg-[#edf7f5] text-[#42746e]"
+                        : "bg-[#fff8e9] text-[#9b6510]"
+                    }`}>
+                      {purchase.cost_status === "CLOSED" ? "Costo final" : "Costo abierto"}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">

@@ -287,3 +287,64 @@ export async function deleteChinaPurchaseV11(
 
   redirect("/admin/series/compras?deleted=1");
 }
+
+
+export async function setChinaPurchaseCostStatusV12(formData: FormData) {
+  const supabase = await createClient();
+
+  const purchaseId = String(formData.get("purchase_id") ?? "");
+  const status = String(formData.get("cost_status") ?? "");
+  const note = String(formData.get("note") ?? "");
+
+  if (!purchaseId || !["OPEN", "CLOSED"].includes(status)) {
+    throw new Error("Estado de costos inválido.");
+  }
+
+  const { error } = await supabase.rpc(
+    "set_series_china_purchase_cost_status_v12",
+    {
+      p_purchase_id: purchaseId,
+      p_status: status,
+      p_note: note,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/series/compras/${purchaseId}`);
+  revalidatePath("/admin/series/compras");
+  revalidatePath("/admin/series");
+  revalidatePath("/series");
+}
+
+export async function updateChinaPurchaseHeaderV12(formData: FormData) {
+  const supabase = await createClient();
+
+  const purchaseId = String(formData.get("purchase_id") ?? "");
+  const purchaseDate = String(formData.get("purchase_date") ?? "");
+  const supplier = String(formData.get("supplier") ?? "");
+  const notes = String(formData.get("notes") ?? "");
+
+  if (!purchaseId) {
+    throw new Error("Compra inválida.");
+  }
+
+  const { error } = await supabase.rpc(
+    "update_series_china_purchase_header_v12",
+    {
+      p_purchase_id: purchaseId,
+      p_purchase_date: purchaseDate || null,
+      p_supplier: supplier,
+      p_notes: notes,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/series/compras/${purchaseId}`);
+  revalidatePath("/admin/series/compras");
+}

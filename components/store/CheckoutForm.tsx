@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CreditCard, MapPin, ShoppingBag, Upload, UserRound } from "lucide-react";
+import { CheckCircle2, CreditCard, MapPin, MessageCircle, ShoppingBag, Upload, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const CART_KEY = "tendencias-series-cart-v7";
@@ -50,16 +50,22 @@ function mixText(mix: MixChoice[]) {
 export function CheckoutForm({
   products,
   paymentAccounts,
+  whatsappNumber,
 }: {
   products: Product[];
   paymentAccounts: PaymentAccount[];
+  whatsappNumber: string;
 }) {
   const supabase = createClient();
   const [cart, setCart] = useState<CartLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState<{ code: string; total: number } | null>(null);
+  const [success, setSuccess] = useState<{
+    code: string;
+    total: number;
+    whatsappUrl: string;
+  } | null>(null);
 
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -180,8 +186,28 @@ export function CheckoutForm({
       if (rpcError) throw new Error(rpcError.message);
 
       localStorage.removeItem(CART_KEY);
+
+      const finalTotal = Number(data.total ?? subtotal);
+      const number = whatsappNumber.replace(/\D/g, "");
+      const message = [
+        "Hola Tendencias Import 💛",
+        `Acabo de registrar mi pedido ${data.code} en la web.`,
+        `Nombre: ${clientName.trim()}`,
+        `WhatsApp: ${clientPhone.trim()}`,
+        `Total: S/ ${finalTotal.toFixed(2)}`,
+        "Quedo atenta a la confirmación de mi pedido.",
+      ].join("\n");
+
+      const whatsappUrl = number
+        ? `https://wa.me/${number}?text=${encodeURIComponent(message)}`
+        : "";
+
       setCart([]);
-      setSuccess({ code: data.code, total: Number(data.total ?? subtotal) });
+      setSuccess({
+        code: data.code,
+        total: finalTotal,
+        whatsappUrl,
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No pudimos registrar el pedido.");
     } finally {
@@ -208,8 +234,23 @@ export function CheckoutForm({
           <p className="text-xs font-bold text-[#7f746c]">Total</p>
           <p className="mt-1 text-2xl font-black text-[#b63a2c]">S/ {success.total.toFixed(2)}</p>
         </div>
-        <Link href="/series" className="mt-5 inline-flex min-h-12 items-center justify-center rounded-[17px] bg-[#b63a2c] px-6 text-sm font-black text-white">
-          Volver a Series
+        {success.whatsappUrl && (
+          <a
+            href={success.whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 flex min-h-13 w-full items-center justify-center gap-2 rounded-[18px] bg-[#25D366] px-6 text-sm font-black !text-white"
+          >
+            <MessageCircle size={18} />
+            Continuar por WhatsApp
+          </a>
+        )}
+
+        <Link
+          href="/series"
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[17px] border border-[#eaded3] bg-white px-6 text-xs font-black text-[#6f655e]"
+        >
+          Seguir viendo Series
         </Link>
       </div>
     );

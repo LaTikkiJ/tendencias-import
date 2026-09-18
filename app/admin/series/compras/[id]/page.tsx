@@ -17,6 +17,7 @@ import {
   setChinaPurchaseStatusV10,
 } from "@/app/admin/series/compras/actions-v10";
 import DeleteChinaPurchaseButton from "@/components/admin/DeleteChinaPurchaseButton";
+import PurchaseCostControls from "@/components/admin/PurchaseCostControls";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +67,7 @@ export default async function ChinaPurchaseDetailPage({
     { data: items },
     { data: payments },
     { data: expenses },
+    { data: audit },
   ] = await Promise.all([
     supabase.from("series_china_purchases").select("*").eq("id", id).single(),
     supabase
@@ -95,6 +97,12 @@ export default async function ChinaPurchaseDetailPage({
       .select("*")
       .eq("purchase_id", id)
       .order("line_no"),
+    supabase
+      .from("series_china_purchase_audit")
+      .select("id,event_type,description,metadata,created_at")
+      .eq("purchase_id", id)
+      .order("created_at", { ascending: false })
+      .limit(30),
   ]);
 
   if (!purchase) notFound();
@@ -124,6 +132,15 @@ export default async function ChinaPurchaseDetailPage({
               </p>
               <span className="rounded-full bg-[#f7f2ec] px-3 py-1 text-[9px] font-black text-[#6f655e]">
                 {statusName(purchase.status)}
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 text-[9px] font-black ${
+                  purchase.cost_status === "CLOSED"
+                    ? "bg-[#edf7f5] text-[#42746e]"
+                    : "bg-[#fff8e9] text-[#9b6510]"
+                }`}
+              >
+                {purchase.cost_status === "CLOSED" ? "Costos cerrados" : "Costos abiertos"}
               </span>
             </div>
 
@@ -155,6 +172,16 @@ export default async function ChinaPurchaseDetailPage({
                 </button>
               </form>
             )}
+
+            <PurchaseCostControls
+              purchase={{
+                id: purchase.id,
+                purchase_date: purchase.purchase_date,
+                supplier: purchase.supplier,
+                notes: purchase.notes,
+                cost_status: purchase.cost_status ?? "OPEN",
+              }}
+            />
 
             <DeleteChinaPurchaseButton
               purchaseId={purchase.id}
@@ -261,7 +288,7 @@ export default async function ChinaPurchaseDetailPage({
         </div>
       </section>
 
-      {purchase.status !== "CANCELADO" && (
+      {purchase.status !== "CANCELADO" && purchase.cost_status !== "CLOSED" && (
         <section className="rounded-[26px] border border-[#dbe9e5] bg-[#f7fcfb] p-4 shadow-sm sm:p-5">
           <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#5a8b86]">
             Pago posterior / saldo
@@ -395,7 +422,7 @@ export default async function ChinaPurchaseDetailPage({
         </div>
       </section>
 
-      {purchase.status !== "CANCELADO" && (
+      {purchase.status !== "CANCELADO" && purchase.cost_status !== "CLOSED" && (
         <section className="rounded-[26px] border border-[#f0d9a8] bg-[#fffaf0] p-4 shadow-sm sm:p-5">
           <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#9b6510]">
             Nuevo gasto
@@ -469,6 +496,21 @@ export default async function ChinaPurchaseDetailPage({
               Agregar y recalcular
             </button>
           </form>
+        </section>
+      )}
+
+      {purchase.cost_status === "CLOSED" && (
+        <section className="rounded-[22px] border border-[#dbe9e5] bg-[#f4faf8] p-4">
+          <p className="text-[10px] font-black uppercase tracking-[.12em] text-[#42746e]">
+            Costos cerrados
+          </p>
+          <p className="mt-1 text-sm font-black">
+            Este es el costo final puesto en almacén.
+          </p>
+          <p className="mt-1 text-[10px] leading-5 text-[#7f746c]">
+            Si aparece un gasto posterior, usa “Reabrir costos”. Al registrar el nuevo gasto
+            se recalcularán automáticamente los costos por prenda, serie y precios sugeridos.
+          </p>
         </section>
       )}
 
@@ -571,6 +613,36 @@ export default async function ChinaPurchaseDetailPage({
               </article>
             );
           })}
+        </div>
+      </section>
+
+      <section className="rounded-[24px] border border-[#eaded3] bg-white p-4 shadow-sm sm:p-5">
+        <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#5a8b86]">
+          Historial de cambios
+        </p>
+        <h2 className="mt-1 text-xl font-black">Auditoría de la compra</h2>
+
+        <div className="mt-4 space-y-2">
+          {(audit ?? []).map((event: any) => (
+            <div
+              key={event.id}
+              className="flex items-start justify-between gap-3 rounded-[14px] bg-[#f8f4f0] p-3"
+            >
+              <div>
+                <p className="text-[9px] font-black">{event.description}</p>
+                <p className="mt-1 text-[8px] text-[#8b8078]">{event.event_type}</p>
+              </div>
+              <p className="shrink-0 text-[8px] text-[#8b8078]">
+                {new Date(event.created_at).toLocaleString("es-PE")}
+              </p>
+            </div>
+          ))}
+
+          {(audit ?? []).length === 0 && (
+            <p className="text-xs text-[#8b8078]">
+              Los próximos pagos, gastos, cambios y cierres quedarán registrados aquí.
+            </p>
+          )}
         </div>
       </section>
     </div>
