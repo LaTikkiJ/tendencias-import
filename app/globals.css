@@ -126,10 +126,10 @@ button.ti-button-primary {
    sin depender de fuentes externas. */
 .ti-brand-page-title {
   font-family:
-    "Arial Rounded MT Bold",
-    "Trebuchet MS",
-    Arial,
-    sans-serif;
+    "Cooper Black",
+    "Cooper Std Black",
+    Georgia,
+    serif;
   font-size: clamp(42px, 7vw, 76px);
   line-height: .95;
   letter-spacing: -0.055em;
@@ -149,10 +149,10 @@ button.ti-button-primary {
 
 .ti-brand-section-title {
   font-family:
-    "Arial Rounded MT Bold",
-    "Trebuchet MS",
-    Arial,
-    sans-serif;
+    "Cooper Black",
+    "Cooper Std Black",
+    Georgia,
+    serif;
   font-size: clamp(26px, 4vw, 44px);
   line-height: 1;
   letter-spacing: -0.04em;
@@ -162,10 +162,10 @@ button.ti-button-primary {
 
 .ti-card-title {
   font-family:
-    "Arial Rounded MT Bold",
-    "Trebuchet MS",
-    Arial,
-    sans-serif;
+    "Cooper Black",
+    "Cooper Std Black",
+    Georgia,
+    serif;
   font-size: 1.35rem;
   line-height: 1.05;
   letter-spacing: -0.035em;
@@ -174,10 +174,10 @@ button.ti-button-primary {
 
 .ti-home-hero-title {
   font-family:
-    "Arial Rounded MT Bold",
-    "Trebuchet MS",
-    Arial,
-    sans-serif;
+    "Cooper Black",
+    "Cooper Std Black",
+    Georgia,
+    serif;
   font-size: clamp(48px, 7vw, 92px);
   line-height: .88;
   letter-spacing: -0.06em;

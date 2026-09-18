@@ -93,38 +93,57 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="ti-card relative overflow-hidden p-6 md:p-8">
+          <div className="ti-card relative overflow-hidden p-5 md:p-8">
             <div className="absolute right-0 top-0 size-40 rounded-full bg-[#c78316]/10 blur-2xl" />
 
-            <div className="relative grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] bg-[#b63a2c] p-6 text-white sm:row-span-2">
-                <Boxes size={32} />
-                <p className="mt-20 text-3xl font-black">
-                  Pacas Kids
-                </p>
-                <p className="mt-2 text-sm text-white/75">
-                  Fotos, videos y pedido personalizado.
-                </p>
-              </div>
+            <div className="relative mx-auto grid max-w-[560px] grid-cols-[1.18fr_.92fr] grid-rows-2 gap-3 sm:gap-4">
+              <Link
+                href="/pacas"
+                className="flex min-h-[290px] flex-col justify-between rounded-[28px] bg-[#b63a2c] p-5 text-white transition hover:-translate-y-1 sm:min-h-[360px] sm:p-7"
+              >
+                <Boxes size={30} />
 
-              <div className="rounded-[24px] bg-[#c78316] p-6 text-white">
-                <p className="text-2xl font-black">
-                  Damas
-                </p>
-                <p className="mt-2 text-sm text-white/80">
-                  Categorías por temporada.
-                </p>
-              </div>
+                <div>
+                  <p className="text-[2rem] font-black leading-[1.02] sm:text-[2.5rem]">
+                    Pacas
+                    <br />
+                    Kids
+                  </p>
+                  <p className="mt-3 max-w-[16rem] text-sm leading-6 text-white/80 sm:text-base">
+                    Fotos, videos y pedido personalizado.
+                  </p>
+                </div>
+              </Link>
 
-              <div className="rounded-[24px] bg-[#5a8b86] p-6 text-white">
-                <PackageCheck size={28} />
-                <p className="mt-5 text-2xl font-black">
-                  Series Kids
-                </p>
-                <p className="mt-2 text-sm text-white/80">
-                  Stock real por código.
-                </p>
-              </div>
+              <Link
+                href="/pacas"
+                className="flex min-h-[138px] flex-col justify-between rounded-[24px] bg-[#c78316] p-4 text-white transition hover:-translate-y-1 sm:min-h-[170px] sm:p-5"
+              >
+                <div />
+                <div>
+                  <p className="text-2xl font-black sm:text-[2rem]">
+                    Damas
+                  </p>
+                  <p className="mt-2 max-w-[12rem] text-xs leading-5 text-white/80 sm:text-sm">
+                    Categorías por temporada.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/series"
+                className="flex min-h-[138px] flex-col justify-between rounded-[24px] bg-[#5a8b86] p-4 text-white transition hover:-translate-y-1 sm:min-h-[170px] sm:p-5"
+              >
+                <PackageCheck size={24} />
+                <div>
+                  <p className="text-2xl font-black sm:text-[2rem]">
+                    Series Kids
+                  </p>
+                  <p className="mt-2 max-w-[12rem] text-xs leading-5 text-white/80 sm:text-sm">
+                    Stock real por código.
+                  </p>
+                </div>
+              </Link>
             </div>
           </div>
         </section>
@@ -149,14 +168,14 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {(categories ?? [])
-              .slice(0, 6)
+              .slice(0, 8)
               .map((category) => (
                 <Link
                   href={`/pacas/${category.slug}`}
                   key={category.id}
-                  className="ti-card overflow-hidden transition hover:-translate-y-1"
+                  className="ti-card group overflow-hidden transition hover:-translate-y-1"
                 >
                   <div
                     className="aspect-square bg-[#f0e6dc] bg-cover bg-center"
@@ -169,18 +188,23 @@ export default async function HomePage() {
                     }
                   />
 
-                  <div className="p-5">
-                    <span className="text-xs font-black uppercase tracking-[.18em] text-[#5a8b86]">
+                  <div className="p-4 sm:p-5">
+                    <span className="text-[10px] font-black uppercase tracking-[.18em] text-[#5a8b86] sm:text-xs">
                       {category.audience}
                     </span>
 
-                    <h3 className="ti-card-title mt-2">
+                    <h3 className="mt-2 text-xl font-black leading-tight sm:text-2xl">
                       {category.name}
                     </h3>
 
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#7f746c]">
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#7f746c] sm:text-sm sm:leading-6">
                       {category.description}
                     </p>
+
+                    <span className="mt-3 inline-flex items-center gap-2 text-xs font-black text-[#9b382b] sm:text-sm">
+                      Ver categoría
+                      <ArrowRight size={16} className="transition group-hover:translate-x-1" />
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -282,8 +306,9 @@ export default async function HomePage() {
 
         <section
           id="como-comprar"
-          className="ti-container py-16 sm:py-20"
+          className="hidden sm:block"
         >
+          <div className="ti-container py-16 sm:py-20">
           <div className="rounded-[30px] bg-[#9d3d31] p-5 shadow-[0_18px_45px_rgba(117,48,38,.15)] sm:p-7">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#ffd46a]">
@@ -334,6 +359,7 @@ export default async function HomePage() {
               )}
             </div>
           </div>
+        </div>
         </section>
       </main>
 
