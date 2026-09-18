@@ -59,62 +59,70 @@ export function PacaGallery({
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-        {items.map((item) => (
-          <article
-            key={item.id}
-            className="overflow-hidden rounded-[20px] border border-[#eaded3] bg-white shadow-sm"
-          >
-            {item.media_type === "video" ? (
-              <div className="relative aspect-square bg-[#201d1b]">
-                {playing[item.id] ? (
-                  <video
+        {items.map((item) => {
+          const footerLabel =
+            item.media_type === "video"
+              ? "Videos referenciales"
+              : "Collages referenciales";
+
+          return (
+            <article
+              key={item.id}
+              className="overflow-hidden rounded-[20px] border border-[#eaded3] bg-white shadow-sm"
+            >
+              {item.media_type === "video" ? (
+                <div className="relative aspect-square bg-[#201d1b]">
+                  {playing[item.id] ? (
+                    <video
+                      src={item.url}
+                      controls
+                      autoPlay
+                      playsInline
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPlaying((current) => ({
+                          ...current,
+                          [item.id]: true,
+                        }))
+                      }
+                      className="grid h-full w-full place-items-center bg-gradient-to-br from-[#3c3531] to-black !text-white"
+                      aria-label="Reproducir video"
+                    >
+                      <span className="grid size-14 place-items-center rounded-full bg-white/15 backdrop-blur">
+                        <Play size={24} fill="currentColor" />
+                      </span>
+                    </button>
+                  )}
+
+                  <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-[9px] font-black !text-white">
+                    VIDEO
+                  </span>
+                </div>
+              ) : (
+                <div className="aspect-square bg-[#eee3d9]">
+                  <img
                     src={item.url}
-                    controls
-                    autoPlay
-                    playsInline
-                    preload="metadata"
+                    alt={item.title ?? "Paca Tendencias Import"}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPlaying((current) => ({
-                        ...current,
-                        [item.id]: true,
-                      }))
-                    }
-                    className="grid h-full w-full place-items-center bg-gradient-to-br from-[#3c3531] to-black !text-white"
-                    aria-label="Reproducir video"
-                  >
-                    <span className="grid size-14 place-items-center rounded-full bg-white/15 backdrop-blur">
-                      <Play size={24} fill="currentColor" />
-                    </span>
-                  </button>
-                )}
+                </div>
+              )}
 
-                <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-[9px] font-black !text-white">
-                  VIDEO
+              <div className="flex h-10 items-center justify-center border-t border-[#f0e6dd] bg-white px-3">
+                <span className="text-[9px] font-black uppercase tracking-[.14em] text-[#9b382b]">
+                  {footerLabel}
                 </span>
               </div>
-            ) : (
-              <div className="aspect-square bg-[#eee3d9]">
-                <img
-                  src={item.url}
-                  alt={item.title ?? "Paca Tendencias Import"}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            )}
-            <div className="flex h-10 items-center justify-center border-t border-[#f0e6dd] bg-white px-3">
-              <span className="text-[9px] font-black uppercase tracking-[.12em] text-[#9b382b]">
-                Disponible en preventa
-              </span>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
       {hasMore && (
