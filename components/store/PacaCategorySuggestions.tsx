@@ -26,7 +26,7 @@ export function PacaCategorySuggestions({
             Sigue explorando
           </p>
 
-          <h2 className="mt-1 text-2xl font-black tracking-[-.03em] sm:text-3xl">
+          <h2 className="ti-brand-section-title mt-1">
             También te puede interesar
           </h2>
         </div>
