@@ -309,49 +309,6 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-
-        {/* SOLO DESKTOP / TABLET: OCULTO COMPLETAMENTE EN CELULAR */}
-        <section
-          id="como-comprar"
-          className="hidden md:block"
-        >
-          <div className="ti-container py-14">
-            <div className="rounded-[30px] bg-[#9d3d31] p-7 shadow-[0_18px_45px_rgba(117,48,38,.15)]">
-              <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#ffd46a]">
-                Cómo comprar
-              </p>
-
-              <h2 className="mt-2 text-4xl font-black tracking-[-.03em] text-white">
-                Explora, elige y compra.
-              </h2>
-
-              <div className="mt-5 grid grid-cols-3 gap-4">
-                {[
-                  ["01", "Explora", "Mira fotos y videos."],
-                  ["02", "Elige", "Selecciona tu opción."],
-                  ["03", "Compra", "Finaliza por WhatsApp."],
-                ].map(([number, title, description]) => (
-                  <div
-                    key={number}
-                    className="rounded-[22px] bg-white/[.10] p-5"
-                  >
-                    <p className="text-sm font-black text-[#ffd46a]">
-                      {number}
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-black text-white">
-                      {title}
-                    </h3>
-
-                    <p className="mt-1 text-[11px] leading-5 text-white/70">
-                      {description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />
