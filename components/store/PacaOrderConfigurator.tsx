@@ -34,6 +34,8 @@ type CartItem = {
   categoryId: string;
   categoryName: string;
   audience: string;
+  sectionName: string;
+  preferenceOptions: string[];
   quantity: number;
   price: number;
   sizeRange: string;
@@ -112,6 +114,8 @@ export default function PacaOrderConfigurator({
   categoryId,
   categoryName,
   audience,
+  sectionName,
+  preferenceOptions,
   sizeRanges,
   prices,
   whatsappNumber,
@@ -119,6 +123,8 @@ export default function PacaOrderConfigurator({
   categoryId: string;
   categoryName: string;
   audience: string;
+  sectionName: string;
+  preferenceOptions: string[];
   sizeRanges: string[];
   prices: PriceOption[];
   whatsappNumber: string;
@@ -144,8 +150,15 @@ export default function PacaOrderConfigurator({
     validPrices[0]?.quantity ?? null,
   );
   const [sizeRange, setSizeRange] = useState("");
+  const normalizedPreferences =
+    preferenceOptions.length > 0
+      ? preferenceOptions
+      : [sectionName];
+
   const [preference, setPreference] = useState(
-    audience === "kids" ? "" : "Damas",
+    normalizedPreferences.length === 1
+      ? normalizedPreferences[0]
+      : "",
   );
   const [note, setNote] = useState("");
 
@@ -174,6 +187,17 @@ export default function PacaOrderConfigurator({
           parsed.map((item) => ({
             ...item,
             references: item.references ?? [],
+            sectionName:
+              item.sectionName ??
+              item.audience ??
+              "Pacas",
+            preferenceOptions:
+              item.preferenceOptions ??
+              (
+                item.audience === "kids"
+                  ? ["Niña", "Niño", "Ambos"]
+                  : [item.audience ?? "Todos"]
+              ),
             priceOptions: item.priceOptions ?? [],
             sizeOptions: item.sizeOptions ?? [],
           })),
@@ -217,10 +241,7 @@ export default function PacaOrderConfigurator({
         Number(item.quantity) === Number(quantity),
     ) ?? null;
 
-  const preferences =
-    audience === "kids"
-      ? ["Niña", "Niño", "Ambos"]
-      : ["Damas"];
+  const preferences = normalizedPreferences;
 
   const canAdd =
     Boolean(selectedPrice) &&
@@ -329,6 +350,8 @@ export default function PacaOrderConfigurator({
       categoryId,
       categoryName,
       audience,
+      sectionName,
+      preferenceOptions: normalizedPreferences,
       quantity,
       price: Number(selectedPrice.price_pen),
       sizeRange,
@@ -344,7 +367,9 @@ export default function PacaOrderConfigurator({
     setNote("");
     setSizeRange("");
     setPreference(
-      audience === "kids" ? "" : "Damas",
+      normalizedPreferences.length === 1
+        ? normalizedPreferences[0]
+        : "",
     );
     resetReferenceFiles([]);
   }
@@ -1009,12 +1034,13 @@ export default function PacaOrderConfigurator({
                       label="Preferencia"
                       value={item.preference}
                       options={
-                        item.audience === "kids"
-                          ? ["Niña", "Niño", "Ambos"].map((option) => ({
-                              value: option,
-                              label: option,
-                            }))
-                          : [{ value: "Damas", label: "Damas" }]
+                        (item.preferenceOptions?.length
+                          ? item.preferenceOptions
+                          : [item.sectionName ?? item.audience]
+                        ).map((option) => ({
+                          value: option,
+                          label: option,
+                        }))
                       }
                       onChange={(value) =>
                         updateCartItem(

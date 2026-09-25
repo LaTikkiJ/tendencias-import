@@ -26,6 +26,14 @@ export default async function PacaDetailPage({
 
   if (!category) notFound();
 
+  const { data: section } = category.section_id
+    ? await supabase
+        .from("paca_sections")
+        .select("id,name,slug,preference_options,accent_color,active")
+        .eq("id", category.section_id)
+        .single()
+    : { data: null as any };
+
   const [
     { data: media, count },
     { data: prices },
@@ -48,7 +56,7 @@ export default async function PacaDetailPage({
 
     supabase
       .from("paca_categories")
-      .select("id,slug,name,audience")
+      .select("id,slug,name,audience,section_id")
       .eq("active", true)
       .neq("id", category.id)
       .limit(8),
@@ -77,10 +85,36 @@ export default async function PacaDetailPage({
     }
   }
 
+  const suggestionSectionIds = Array.from(
+    new Set(
+      (suggestionCategories ?? [])
+        .map((item) => item.section_id)
+        .filter(Boolean),
+    ),
+  );
+
+  const { data: suggestionSections } =
+    suggestionSectionIds.length > 0
+      ? await supabase
+          .from("paca_sections")
+          .select("id,name")
+          .in("id", suggestionSectionIds)
+      : { data: [] as any[] };
+
+  const suggestionSectionMap = new Map(
+    (suggestionSections ?? []).map((item) => [
+      item.id,
+      item.name,
+    ]),
+  );
+
   const suggestions = (suggestionCategories ?? [])
     .slice(0, 4)
     .map((item) => ({
       ...item,
+      sectionName:
+        suggestionSectionMap.get(item.section_id) ??
+        item.audience,
       imageUrl: firstImageByCategory.get(item.id) ?? null,
     }));
 
@@ -91,7 +125,7 @@ export default async function PacaDetailPage({
       <Header />
       <main className="ti-container py-12">
         <p className="text-xs font-black uppercase tracking-[.18em] text-[#5a8b86]">
-          {category.audience}
+          {section?.name ?? category.audience}
         </p>
         <h1 className="ti-brand-page-title mt-3">{category.name}</h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-[#7f746c]">{category.description}</p>
@@ -118,7 +152,11 @@ export default async function PacaDetailPage({
         <PacaOrderConfigurator
           categoryId={category.id}
           categoryName={category.name}
-          audience={category.audience}
+          audience={section?.slug ?? category.audience}
+          sectionName={section?.name ?? category.audience}
+          preferenceOptions={
+            (section?.preference_options ?? []) as string[]
+          }
           sizeRanges={(category.size_ranges ?? []) as string[]}
           prices={(prices ?? []) as any}
           whatsappNumber={whatsapp}

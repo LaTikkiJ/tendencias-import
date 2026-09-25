@@ -44,6 +44,7 @@ export default async function AdminPacaDetailPage({
     { data: category },
     { data: media },
     { data: prices },
+    { data: sections },
   ] = await Promise.all([
     supabase
       .from("paca_categories")
@@ -64,6 +65,12 @@ export default async function AdminPacaDetailPage({
       .select("quantity,price_pen")
       .eq("category_id", id)
       .order("quantity"),
+
+    supabase
+      .from("paca_sections")
+      .select("id,name,slug,accent_color,active")
+      .order("sort_order")
+      .order("name"),
   ]);
 
   if (!category) {
@@ -103,16 +110,17 @@ export default async function AdminPacaDetailPage({
           <div className="relative">
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[.14em] text-white ${
-                  category.audience ===
-                  "kids"
-                    ? "bg-[#b63a2c]"
-                    : "bg-[#d39218]"
-                }`}
+                className="rounded-full px-3 py-1 text-xs font-black uppercase tracking-[.14em] text-white"
+                style={{
+                  backgroundColor:
+                    (sections ?? []).find(
+                      (section) => section.id === category.section_id,
+                    )?.accent_color ?? "#b63a2c",
+                }}
               >
-                {
-                  category.audience
-                }
+                {(sections ?? []).find(
+                  (section) => section.id === category.section_id,
+                )?.name ?? category.audience}
               </span>
 
               <span
@@ -185,26 +193,31 @@ export default async function AdminPacaDetailPage({
 
         <div className="grid gap-5 md:grid-cols-2">
 
-          {/* TIPO */}
+          {/* SECCIÓN */}
           <div>
             <label className="mb-2 block text-sm font-black">
-              Tipo de paca
+              Sección
             </label>
 
             <select
-              name="audience"
+              name="section_id"
               className="ti-input"
-              defaultValue={
-                category.audience
-              }
+              defaultValue={category.section_id ?? ""}
+              required
             >
-              <option value="kids">
-                Pacas Kids
+              <option value="">
+                Selecciona...
               </option>
 
-              <option value="damas">
-                Pacas Damas
-              </option>
+              {(sections ?? []).map((section) => (
+                <option
+                  key={section.id}
+                  value={section.id}
+                >
+                  {section.name}
+                  {!section.active ? " · oculta" : ""}
+                </option>
+              ))}
             </select>
           </div>
 

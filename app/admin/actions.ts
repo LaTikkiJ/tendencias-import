@@ -31,22 +31,29 @@ function csvNumbers(value: FormDataEntryValue | null) {
 export async function createPacaCategory(formData: FormData) {
   const supabase = await createClient();
 
-  const audience = String(formData.get("audience") ?? "kids");
+  const sectionId = String(formData.get("section_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
 
-  const sizeRanges = csvText(
-    formData.get("size_ranges")
-  );
+  const sizeRanges = csvText(formData.get("size_ranges"));
+  const boxQuantities = csvNumbers(formData.get("box_quantities"));
 
-  const boxQuantities = csvNumbers(
-    formData.get("box_quantities")
-  );
+  if (!sectionId) {
+    throw new Error("Selecciona una sección para esta categoría.");
+  }
 
   if (!name) {
-    throw new Error(
-      "Debes ingresar el nombre de la categoría."
-    );
+    throw new Error("Debes ingresar el nombre de la categoría.");
+  }
+
+  const { data: section, error: sectionError } = await supabase
+    .from("paca_sections")
+    .select("slug")
+    .eq("id", sectionId)
+    .single();
+
+  if (sectionError || !section) {
+    throw new Error(sectionError?.message ?? "Sección no encontrada.");
   }
 
   const slugBase = name
@@ -57,17 +64,19 @@ export async function createPacaCategory(formData: FormData) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  const slug = `${slugBase}-${audience}`;
+  const slug = `${slugBase}-${section.slug}`;
 
   const { data, error } = await supabase
     .from("paca_categories")
     .insert({
-      audience,
+      section_id: sectionId,
+      audience: section.slug,
       name,
       slug,
       description,
       size_ranges: sizeRanges,
-      box_quantities: boxQuantities,
+      box_quantities:
+        boxQuantities.length > 0 ? boxQuantities : [25, 50, 100],
       active: true,
     })
     .select("id")
@@ -87,18 +96,32 @@ export async function createPacaCategory(formData: FormData) {
 export async function updatePacaCategory(formData: FormData) {
   const supabase = await createClient();
 
-  const id = String(formData.get("id"));
+  const id = String(formData.get("id") ?? "");
+  const sectionId = String(formData.get("section_id") ?? "");
+
+  if (!id || !sectionId) {
+    throw new Error("Categoría o sección inválida.");
+  }
+
+  const { data: section, error: sectionError } = await supabase
+    .from("paca_sections")
+    .select("slug")
+    .eq("id", sectionId)
+    .single();
+
+  if (sectionError || !section) {
+    throw new Error(sectionError?.message ?? "Sección no encontrada.");
+  }
 
   const { error } = await supabase
     .from("paca_categories")
     .update({
-      audience: String(formData.get("audience")),
+      section_id: sectionId,
+      audience: section.slug,
       name: String(formData.get("name") ?? "").trim(),
       description: String(formData.get("description") ?? "").trim(),
       size_ranges: csvText(formData.get("size_ranges")),
-      box_quantities: csvNumbers(
-        formData.get("box_quantities")
-      ),
+      box_quantities: csvNumbers(formData.get("box_quantities")),
       active: formData.get("active") === "on",
     })
     .eq("id", id);

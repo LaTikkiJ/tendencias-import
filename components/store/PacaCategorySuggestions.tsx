@@ -6,6 +6,7 @@ type Suggestion = {
   slug: string;
   name: string;
   audience: string;
+  sectionName?: string;
   imageUrl: string | null;
 };
 
@@ -64,7 +65,7 @@ export function PacaCategorySuggestions({
 
             <div className="p-3">
               <p className="text-[8px] font-black uppercase tracking-[.08em] text-[#5a8b86]">
-                {item.audience}
+                {item.sectionName ?? item.audience}
               </p>
 
               <p className="mt-1 truncate text-sm font-black">
