@@ -86,7 +86,8 @@ export default async function HomePage() {
       <main>
         <PacaHomeHero banners={(banners ?? []) as any} />
 
-        <section className="ti-container py-12 sm:py-16">
+        <section className="border-t border-[#efe4da] bg-white/55 py-12 sm:py-16">
+          <div className="ti-container">
           <div className="text-center">
             <p className="text-[10px] font-black uppercase tracking-[.24em] text-[#b63a2c]">
               Tendencias Import
@@ -147,101 +148,6 @@ export default async function HomePage() {
                 </div>
               </Link>
             ))}
-          </div>
-        </section>
-
-        <section className="border-y border-[#efe4da] bg-white/55 py-12 sm:py-16">
-          <div className="ti-container">
-            <div className="text-center">
-              <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#5a8b86]">
-                Explora por categoría
-              </p>
-
-              <h2 className="mx-auto mt-2 max-w-3xl text-3xl font-black tracking-[-.04em] sm:text-5xl">
-                Referencias para elegir mejor
-              </h2>
-            </div>
-
-            <div className="mt-8 space-y-10">
-              {(sections ?? []).map((section) => {
-                const items = (categories ?? [])
-                  .filter(
-                    (category) =>
-                      category.section_id === section.id,
-                  )
-                  .slice(0, 6);
-
-                if (items.length === 0) return null;
-
-                return (
-                  <div key={section.id}>
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <h3 className="text-xl font-black sm:text-2xl">
-                        {section.name}
-                      </h3>
-
-                      <Link
-                        href={`/pacas?section=${section.slug}`}
-                        className="text-[10px] font-black text-[#9b382b] sm:text-xs"
-                      >
-                        Ver sección →
-                      </Link>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5">
-                      {items.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={`/pacas/${category.slug}`}
-                          className="group overflow-hidden rounded-[20px] bg-white shadow-[0_8px_24px_rgba(65,45,35,.07)]"
-                        >
-                          <div className="aspect-square overflow-hidden bg-[#eee4da]">
-                            {category.cover_url ? (
-                              <img
-                                src={category.cover_url}
-                                alt={category.name}
-                                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                              />
-                            ) : (
-                              <div
-                                className="grid h-full place-items-center"
-                                style={{
-                                  backgroundColor:
-                                    section.accent_color ?? "#b63a2c",
-                                }}
-                              >
-                                <Boxes size={28} className="text-white/80" />
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="p-3.5 sm:p-4">
-                            <p
-                              className="text-[8px] font-black uppercase tracking-[.12em]"
-                              style={{
-                                color:
-                                  section.accent_color ?? "#b63a2c",
-                              }}
-                            >
-                              {section.name}
-                            </p>
-
-                            <h4 className="mt-1 text-[16px] font-black leading-tight sm:text-xl">
-                              {category.name}
-                            </h4>
-
-                            <span className="mt-3 inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[.08em] text-[#9b382b]">
-                              Ver referencias
-                              <ArrowRight size={12} />
-                            </span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </section>
 
@@ -320,6 +226,7 @@ export default async function HomePage() {
                 </Link>
               );
             })}
+          </div>
           </div>
         </section>
       </main>
