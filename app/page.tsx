@@ -108,8 +108,8 @@ export default async function HomePage() {
                   href={`/pacas?section=${section.slug}`}
                   className={`group relative overflow-hidden rounded-[24px] bg-[#eee5dc] shadow-[0_12px_30px_rgba(75,50,40,.09)] ${
                     isLastOdd
-                      ? "col-span-2 w-[calc(50%-6px)] justify-self-center lg:col-span-1 lg:w-auto"
-                      : ""
+                      ? "col-span-2 w-1/2 justify-self-center lg:col-span-1 lg:w-full"
+                      : "w-full"
                   }`}
                 >
                   <div className="aspect-[4/3] sm:aspect-[16/10]">
