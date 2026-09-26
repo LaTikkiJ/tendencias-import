@@ -29,5 +29,18 @@ export default async function AdminLayout({
     redirect("/login-admin");
   }
 
-  return <AdminShell>{children}</AdminShell>;
+  const { data: pacaSections } = await supabase
+    .from("paca_sections")
+    .select("id,name,slug")
+    .eq("active", true)
+    .order("sort_order")
+    .order("name");
+
+  return (
+    <AdminShell
+      pacaSections={(pacaSections ?? []) as any}
+    >
+      {children}
+    </AdminShell>
+  );
 }

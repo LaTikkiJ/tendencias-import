@@ -92,15 +92,19 @@ export default async function AdminPacasPage() {
         </div>
       </section>
 
+      <div id="portada" className="scroll-mt-8">
       <PacaHomeBannerManager
         banners={(banners ?? []) as any}
       />
+      </div>
 
+      <div id="secciones" className="scroll-mt-8">
       <PacaSectionsManager
         sections={(sections ?? []) as any}
       />
+      </div>
 
-      <details className="group overflow-hidden rounded-[30px] border border-[#eaded3] bg-white shadow-sm">
+      <details id="nueva-categoria" className="group scroll-mt-8 overflow-hidden rounded-[30px] border border-[#eaded3] bg-white shadow-sm">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5">
           <div className="flex items-center gap-4">
             <span className="grid size-12 place-items-center rounded-full bg-[#b63a2c] text-white">
@@ -222,7 +226,7 @@ export default async function AdminPacasPage() {
         </form>
       </details>
 
-      <section>
+      <section id="categorias" className="scroll-mt-8">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#5a8b86]">
