@@ -8,16 +8,18 @@ import {
 } from "lucide-react";
 
 import {
-  createPacaHomeBannerV17,
-  deletePacaHomeBannerV17,
-  updatePacaHomeBannerV17,
-} from "@/app/admin/pacas/home-actions-v17";
+  createPacaHomeBannerV18,
+  deletePacaHomeBannerV18,
+  updatePacaHomeBannerV18,
+} from "@/app/admin/pacas/home-actions-v18";
 import CatalogImageUploader from "@/components/admin/CatalogImageUploader";
 
 type Banner = {
   id: string;
   image_url: string;
+  eyebrow: string | null;
   title: string | null;
+  highlight_text: string | null;
   subtitle: string | null;
   sort_order: number;
   active: boolean;
@@ -32,20 +34,18 @@ export default function PacaHomeBannerManager({
 
   return (
     <section className="rounded-[30px] border border-[#eaded3] bg-white p-5 shadow-[0_10px_30px_rgba(100,70,40,.05)] sm:p-6">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
-          Portada de la tienda
-        </p>
+      <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#5a8b86]">
+        Portada de la tienda
+      </p>
 
-        <h2 className="mt-2 text-2xl font-black tracking-[-.03em]">
-          Banners principales
-        </h2>
+      <h2 className="mt-2 text-2xl font-black tracking-[-.03em]">
+        Banners y frases principales
+      </h2>
 
-        <p className="mt-2 max-w-2xl text-xs leading-5 text-[#7f746c]">
-          Sube las imágenes que quieras mostrar al inicio. Tendencias puede
-          cambiarlas cuando llegue mercadería nueva o una campaña distinta.
-        </p>
-      </div>
+      <p className="mt-2 max-w-2xl text-xs leading-5 text-[#7f746c]">
+        Sofía puede cambiar las imágenes y también las frases. La tipografía
+        del diseño se conserva automáticamente en la web.
+      </p>
 
       <details className="mt-5 rounded-[22px] border border-[#eaded3] bg-[#fffaf6] p-4">
         <summary className="cursor-pointer list-none text-sm font-black">
@@ -53,7 +53,7 @@ export default function PacaHomeBannerManager({
         </summary>
 
         <form
-          action={createPacaHomeBannerV17}
+          action={createPacaHomeBannerV18}
           className="mt-4 grid gap-4"
         >
           <CatalogImageUploader
@@ -70,17 +70,11 @@ export default function PacaHomeBannerManager({
             value={newImage}
           />
 
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_110px]">
+          <div className="grid gap-3 sm:grid-cols-2">
             <input
-              name="title"
+              name="eyebrow"
               className="ti-input"
-              placeholder="Título opcional"
-            />
-
-            <input
-              name="subtitle"
-              className="ti-input"
-              placeholder="Texto opcional"
+              placeholder="Texto pequeño: TENDENCIAS IMPORT PERÚ"
             />
 
             <input
@@ -89,6 +83,24 @@ export default function PacaHomeBannerManager({
               defaultValue="10"
               className="ti-input"
               placeholder="Orden"
+            />
+
+            <input
+              name="title"
+              className="ti-input"
+              placeholder="Frase principal: Moda mayorista"
+            />
+
+            <input
+              name="highlight_text"
+              className="ti-input"
+              placeholder="Frase resaltada: para hacer crecer tu negocio"
+            />
+
+            <textarea
+              name="subtitle"
+              className="ti-input min-h-20 py-3 sm:col-span-2"
+              placeholder="Texto inferior opcional"
             />
           </div>
 
@@ -123,7 +135,7 @@ function BannerEditor({
 
   return (
     <div className="rounded-[22px] border border-[#eaded3] bg-[#fffdfb] p-4">
-      <form action={updatePacaHomeBannerV17}>
+      <form action={updatePacaHomeBannerV18}>
         <input type="hidden" name="id" value={banner.id} />
         <input type="hidden" name="image_url" value={imageUrl} />
 
@@ -137,17 +149,10 @@ function BannerEditor({
 
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <input
-            name="title"
-            defaultValue={banner.title ?? ""}
+            name="eyebrow"
+            defaultValue={banner.eyebrow ?? ""}
             className="ti-input"
-            placeholder="Título opcional"
-          />
-
-          <input
-            name="subtitle"
-            defaultValue={banner.subtitle ?? ""}
-            className="ti-input"
-            placeholder="Texto opcional"
+            placeholder="Texto pequeño"
           />
 
           <input
@@ -157,13 +162,34 @@ function BannerEditor({
             className="ti-input"
           />
 
-          <label className="flex items-center gap-2 rounded-[14px] border border-[#eaded3] bg-white px-3 text-[10px] font-black">
+          <input
+            name="title"
+            defaultValue={banner.title ?? ""}
+            className="ti-input"
+            placeholder="Frase principal"
+          />
+
+          <input
+            name="highlight_text"
+            defaultValue={banner.highlight_text ?? ""}
+            className="ti-input"
+            placeholder="Frase resaltada"
+          />
+
+          <textarea
+            name="subtitle"
+            defaultValue={banner.subtitle ?? ""}
+            className="ti-input min-h-20 py-3 sm:col-span-2"
+            placeholder="Texto inferior"
+          />
+
+          <label className="flex items-center gap-2 rounded-[14px] border border-[#eaded3] bg-white px-3 py-3 text-[10px] font-black sm:col-span-2">
             <input
               type="checkbox"
               name="active"
               defaultChecked={banner.active}
             />
-            Mostrar en la web
+            Mostrar este banner en la web
           </label>
         </div>
 
@@ -174,7 +200,7 @@ function BannerEditor({
       </form>
 
       <form
-        action={deletePacaHomeBannerV17}
+        action={deletePacaHomeBannerV18}
         className="mt-2"
       >
         <input type="hidden" name="id" value={banner.id} />

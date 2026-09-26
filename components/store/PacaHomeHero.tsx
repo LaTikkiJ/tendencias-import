@@ -5,8 +5,15 @@ import { useEffect, useState } from "react";
 type Banner = {
   id: string;
   image_url: string;
+  eyebrow: string | null;
   title: string | null;
+  highlight_text: string | null;
   subtitle: string | null;
+};
+
+const cooperStyle = {
+  fontFamily:
+    '"Cooper Black", "Cooper Std Black", Georgia, serif',
 };
 
 export default function PacaHomeHero({
@@ -21,7 +28,7 @@ export default function PacaHomeHero({
 
     const timer = window.setInterval(() => {
       setIndex((current) => (current + 1) % banners.length);
-    }, 6000);
+    }, 6500);
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
@@ -29,19 +36,21 @@ export default function PacaHomeHero({
   if (banners.length === 0) {
     return (
       <section className="ti-container pt-5">
-        <div className="grid min-h-[330px] place-items-center overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#b63a2c,#c78316)] px-6 text-center text-white sm:min-h-[430px]">
+        <div className="grid min-h-[320px] place-items-center overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#b63a2c,#c78316)] px-6 text-center text-white sm:min-h-[430px]">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[.25em] text-white/70">
+            <p className="text-[10px] font-black uppercase tracking-[.25em] text-white/75">
               Tendencias Import Perú
             </p>
 
-            <h1 className="mt-3 text-4xl font-black tracking-[-.05em] sm:text-6xl">
-              Moda mayorista para tu negocio
+            <h1
+              className="mt-3 text-4xl leading-[.95] sm:text-6xl"
+              style={cooperStyle}
+            >
+              Moda mayorista
+              <span className="block text-[#ffd47b]">
+                para hacer crecer tu negocio
+              </span>
             </h1>
-
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-white/80">
-              Pacas en preventa y Series Kids.
-            </p>
           </div>
         </div>
       </section>
@@ -67,23 +76,41 @@ export default function PacaHomeHero({
                 className="h-full w-full object-cover"
               />
 
-              {(banner.title || banner.subtitle) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/15 to-transparent">
-                  <div className="flex h-full max-w-2xl flex-col justify-end p-6 text-white sm:p-10">
-                    {banner.title && (
-                      <h1 className="text-4xl font-black leading-[.95] tracking-[-.05em] sm:text-6xl">
-                        {banner.title}
-                      </h1>
-                    )}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1f1713]/70 via-[#1f1713]/22 to-transparent" />
 
-                    {banner.subtitle && (
-                      <p className="mt-3 max-w-lg text-sm leading-6 text-white/85 sm:text-base">
-                        {banner.subtitle}
-                      </p>
-                    )}
-                  </div>
+              <div className="absolute inset-0 flex items-end">
+                <div className="w-full max-w-3xl p-6 text-white sm:p-10 lg:p-12">
+                  {banner.eyebrow && (
+                    <p className="text-[9px] font-black uppercase tracking-[.24em] text-[#ffd47b] sm:text-[11px]">
+                      {banner.eyebrow}
+                    </p>
+                  )}
+
+                  {banner.title && (
+                    <h1
+                      className="mt-2 text-4xl leading-[.92] tracking-[-.035em] sm:text-6xl lg:text-7xl"
+                      style={cooperStyle}
+                    >
+                      {banner.title}
+                    </h1>
+                  )}
+
+                  {banner.highlight_text && (
+                    <p
+                      className="mt-1 text-4xl leading-[.92] tracking-[-.035em] text-[#ef7458] sm:text-6xl lg:text-7xl"
+                      style={cooperStyle}
+                    >
+                      {banner.highlight_text}
+                    </p>
+                  )}
+
+                  {banner.subtitle && (
+                    <p className="mt-4 max-w-xl text-xs leading-6 text-white/86 sm:text-sm">
+                      {banner.subtitle}
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>

@@ -58,7 +58,7 @@ export default async function AdminPacasPage() {
 
     supabase
       .from("paca_home_banners")
-      .select("id,image_url,title,subtitle,sort_order,active")
+      .select("id,image_url,eyebrow,title,highlight_text,subtitle,sort_order,active")
       .order("sort_order")
       .order("created_at"),
   ]);

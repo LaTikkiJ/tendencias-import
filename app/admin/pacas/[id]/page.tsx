@@ -20,6 +20,7 @@ import {
 } from "@/components/admin/MediaManager";
 
 import PacaPriceEditor from "@/components/admin/PacaPriceEditor";
+import PacaCategoryHeroEditor from "@/components/admin/PacaCategoryHeroEditor";
 
 import {
   createClient,
@@ -148,6 +149,11 @@ export default async function AdminPacaDetailPage({
           </div>
         </div>
       </section>
+
+      <PacaCategoryHeroEditor
+        categoryId={category.id}
+        initialHeroUrl={category.hero_url ?? null}
+      />
 
       {/* ENLACE AUTOMÁTICO */}
       <section className="rounded-[26px] border border-[#e2ece9] bg-[#f4faf8] p-5">

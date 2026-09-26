@@ -9,6 +9,11 @@ import { PacaCategorySuggestions } from "@/components/store/PacaCategorySuggesti
 
 export const dynamic = "force-dynamic";
 
+const cooperStyle = {
+  fontFamily:
+    '"Cooper Black", "Cooper Std Black", Georgia, serif',
+};
+
 export default async function PacaDetailPage({
   params,
 }: {
@@ -118,55 +123,136 @@ export default async function PacaDetailPage({
       imageUrl: firstImageByCategory.get(item.id) ?? null,
     }));
 
-  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
+  const whatsapp =
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
+
+  const heroUrl =
+    category.hero_url ||
+    category.cover_url ||
+    null;
 
   return (
     <>
       <Header />
-      <main className="ti-container py-12">
-        <p className="text-xs font-black uppercase tracking-[.18em] text-[#5a8b86]">
-          {section?.name ?? category.audience}
-        </p>
-        <h1 className="ti-brand-page-title mt-3">{category.name}</h1>
-        <p className="mt-4 max-w-2xl text-lg leading-8 text-[#7f746c]">{category.description}</p>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#fff0e9] px-4 py-2 text-[10px] font-black uppercase tracking-[.08em] text-[#9b382b]">
-            <PackageOpen size={13} />
-            En preventa
-          </span>
+      <main>
+        <section className="ti-container pt-5">
+          <div
+            className={`relative overflow-hidden rounded-[28px] ${
+              heroUrl
+                ? "min-h-[330px] sm:min-h-[420px]"
+                : "bg-[#fff5ec]"
+            }`}
+          >
+            {heroUrl && (
+              <img
+                src={heroUrl}
+                alt={category.name}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
 
-          {(category.size_ranges ?? []).map((size: string) => (
-            <span key={size} className="ti-pill">{size}</span>
-          ))}
-        </div>
+            <div
+              className={`absolute inset-0 ${
+                heroUrl
+                  ? "bg-gradient-to-r from-[#231814]/72 via-[#231814]/28 to-transparent"
+                  : "bg-[linear-gradient(135deg,#fff3e8,#f8eee5)]"
+              }`}
+            />
 
-        <div className="mt-10">
-          <PacaGallery
+            <div className="relative z-10 flex min-h-[330px] items-end p-6 sm:min-h-[420px] sm:p-10">
+              <div className="max-w-3xl">
+                <p
+                  className={`text-[10px] font-black uppercase tracking-[.2em] ${
+                    heroUrl
+                      ? "text-[#ffd47b]"
+                      : "text-[#5a8b86]"
+                  }`}
+                >
+                  {section?.name ?? category.audience}
+                </p>
+
+                <h1
+                  className={`mt-2 text-4xl leading-[.92] tracking-[-.035em] sm:text-6xl ${
+                    heroUrl
+                      ? "text-white"
+                      : "text-[#2c2825]"
+                  }`}
+                  style={cooperStyle}
+                >
+                  {category.name}
+                </h1>
+
+                {category.description && (
+                  <p
+                    className={`mt-4 max-w-2xl text-sm leading-7 sm:text-base ${
+                      heroUrl
+                        ? "text-white/82"
+                        : "text-[#7f746c]"
+                    }`}
+                  >
+                    {category.description}
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[.08em] ${
+                      heroUrl
+                        ? "bg-white/90 text-[#9b382b]"
+                        : "bg-[#fff0e9] text-[#9b382b]"
+                    }`}
+                  >
+                    <PackageOpen size={13} />
+                    En preventa
+                  </span>
+
+                  {(category.size_ranges ?? []).map((size: string) => (
+                    <span
+                      key={size}
+                      className={`rounded-full border px-4 py-2 text-[10px] font-black ${
+                        heroUrl
+                          ? "border-white/30 bg-black/20 text-white backdrop-blur"
+                          : "border-[#eaded3] bg-white text-[#2c2825]"
+                      }`}
+                    >
+                      {size}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="ti-container py-9">
+          <div>
+            <PacaGallery
+              categoryId={category.id}
+              initialMedia={(media ?? []) as any}
+              initialHasMore={Number(count ?? 0) > 12}
+            />
+          </div>
+
+          <PacaOrderConfigurator
             categoryId={category.id}
-            initialMedia={(media ?? []) as any}
-            initialHasMore={Number(count ?? 0) > 12}
+            categoryName={category.name}
+            audience={section?.slug ?? category.audience}
+            sectionName={section?.name ?? category.audience}
+            preferenceOptions={
+              (section?.preference_options ?? []) as string[]
+            }
+            sizeRanges={(category.size_ranges ?? []) as string[]}
+            prices={(prices ?? []) as any}
+            whatsappNumber={whatsapp}
+          />
+
+          <PacaCategorySuggestions
+            items={suggestions as any}
           />
         </div>
-
-        <PacaOrderConfigurator
-          categoryId={category.id}
-          categoryName={category.name}
-          audience={section?.slug ?? category.audience}
-          sectionName={section?.name ?? category.audience}
-          preferenceOptions={
-            (section?.preference_options ?? []) as string[]
-          }
-          sizeRanges={(category.size_ranges ?? []) as string[]}
-          prices={(prices ?? []) as any}
-          whatsappNumber={whatsapp}
-        />
-
-        <PacaCategorySuggestions
-          items={suggestions as any}
-        />
-
       </main>
+
       <Footer />
     </>
   );
