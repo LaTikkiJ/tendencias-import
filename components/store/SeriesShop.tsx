@@ -254,62 +254,123 @@ export function SeriesShop({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        {items.map((item) => (
-          <article
-            key={item.id}
-            className="overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_8px_24px_rgba(100,70,40,.05)]"
-          >
-            <div className="relative aspect-[4/5] overflow-hidden bg-[#efe5dc]">
-              {item.cover_url ? (
-                <img src={item.cover_url} alt={item.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="grid h-full place-items-center">
-                  <ShoppingBag size={26} className="text-[#5a8b86]" />
-                </div>
-              )}
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+        {items.map((item) => {
+          const hasStock = item.stock_series_available > 0;
+          const hasPreorder = item.preorder_series_available > 0;
 
-              <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-1 text-[8px] font-black text-[#5a8b86]">
-                {item.code}
-              </span>
-            </div>
-
-            <div className="p-3 sm:p-4">
-              <h2 className="line-clamp-2 text-[14px] font-black leading-5 sm:text-[16px]">
-                {item.name}
-              </h2>
-
-              <p className="mt-1 truncate text-[9px] font-bold text-[#8b8078]">
-                {item.sizes.join(" · ")}
-              </p>
-
-              <div className="mt-3 space-y-1">
-                {item.stock_series_available > 0 && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <b className="text-[#5a8b86]">Stock {item.stock_series_available}</b>
-                    <b className="text-[#b63a2c]">{money(item.price_stock)}</b>
-                  </div>
-                )}
-
-                {item.preorder_series_available > 0 && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <b className="text-[#d39218]">Preventa {item.preorder_series_available}</b>
-                    <b className="text-[#9b6510]">{money(item.price_preorder)}</b>
-                  </div>
-                )}
-              </div>
-
+          return (
+            <article
+              key={item.id}
+              className="group overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_8px_24px_rgba(100,70,40,.06)] transition hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(100,70,40,.10)]"
+            >
               <button
                 type="button"
                 onClick={() => openProduct(item)}
-                className="mt-3 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-[14px] bg-[#fff0e9] px-2 text-[10px] font-black text-[#9b382b]"
+                className="block w-full text-left"
               >
-                <Palette size={13} />
-                Elegir serie
+                <div className="relative aspect-square overflow-hidden bg-[#efe5dc]">
+                  {item.cover_url ? (
+                    <img
+                      src={item.cover_url}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]"
+                    />
+                  ) : (
+                    <div className="grid h-full place-items-center bg-[linear-gradient(135deg,#f0e7df,#e2d3c6)]">
+                      <ShoppingBag
+                        size={30}
+                        className="text-[#5a8b86]"
+                      />
+                    </div>
+                  )}
+
+                  <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2.5">
+                    <span className="rounded-full bg-white/95 px-2.5 py-1 text-[8px] font-black tracking-[.08em] text-[#5a8b86] shadow-sm">
+                      {item.code}
+                    </span>
+
+                    <div className="flex flex-col items-end gap-1">
+                      {hasStock && (
+                        <span className="rounded-full bg-[#5a8b86]/95 px-2.5 py-1 text-[8px] font-black !text-white shadow-sm">
+                          Stock {item.stock_series_available}
+                        </span>
+                      )}
+
+                      {hasPreorder && (
+                        <span className="rounded-full bg-[#c78316]/95 px-2.5 py-1 text-[8px] font-black !text-white shadow-sm">
+                          Preventa {item.preorder_series_available}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent p-3 pt-12">
+                    <p className="line-clamp-2 text-[14px] font-black leading-5 !text-white sm:text-[17px]">
+                      {item.name}
+                    </p>
+                  </div>
+                </div>
               </button>
-            </div>
-          </article>
-        ))}
+
+              <div className="p-3.5 sm:p-4">
+                <div className="flex flex-wrap gap-1.5">
+                  {item.sizes.slice(0, 7).map((size) => (
+                    <span
+                      key={size}
+                      className="rounded-full bg-[#f8f4f0] px-2 py-1 text-[8px] font-black text-[#6f655e]"
+                    >
+                      {size}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div
+                    className={`rounded-[14px] p-2.5 ${
+                      hasPreorder
+                        ? "bg-[#fff7e9]"
+                        : "bg-[#f6f2ee] opacity-45"
+                    }`}
+                  >
+                    <p className="text-[7px] font-black uppercase tracking-[.08em] text-[#9b6510]">
+                      Preventa
+                    </p>
+
+                    <p className="mt-1 text-[11px] font-black text-[#9b6510] sm:text-xs">
+                      {money(item.price_preorder)}
+                    </p>
+                  </div>
+
+                  <div
+                    className={`rounded-[14px] p-2.5 ${
+                      hasStock
+                        ? "bg-[#edf7f5]"
+                        : "bg-[#f6f2ee] opacity-45"
+                    }`}
+                  >
+                    <p className="text-[7px] font-black uppercase tracking-[.08em] text-[#42746e]">
+                      Stock
+                    </p>
+
+                    <p className="mt-1 text-[11px] font-black text-[#42746e] sm:text-xs">
+                      {money(item.price_stock)}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => openProduct(item)}
+                  className="mt-3 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full bg-[#b63a2c] px-3 text-[10px] font-black !text-white shadow-sm transition hover:bg-[#9f3328]"
+                >
+                  <Palette size={13} />
+                  Elegir serie
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {cart.length > 0 && (

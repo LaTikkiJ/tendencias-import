@@ -12,6 +12,8 @@ import {
   createClient,
 } from "@/lib/supabase/server";
 
+import SeriesStorefrontEditor from "@/components/admin/SeriesStorefrontEditor";
+
 export const dynamic =
   "force-dynamic";
 
@@ -30,11 +32,12 @@ export default async function AdminSeriesPage() {
   const supabase =
     await createClient();
 
-  const { data } =
-    await supabase
-      .from(
-        "series_products"
-      )
+  const [
+    { data },
+    { data: storefrontSettings },
+  ] = await Promise.all([
+    supabase
+      .from("series_products")
       .select(`
         id,
         code,
@@ -53,16 +56,24 @@ export default async function AdminSeriesPage() {
         status,
         active
       `)
-      .order(
-        "created_at",
-        {
-          ascending:
-            false,
-        }
-      );
+      .order("created_at", { ascending: false }),
 
-  const products =
-    data ?? [];
+    supabase
+      .from("series_storefront_settings")
+      .select(`
+        id,
+        eyebrow,
+        title,
+        highlight_text,
+        subtitle,
+        hero_url
+      `)
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const products = data ?? [];
 
   const stockTotal =
     products.reduce(
@@ -135,6 +146,10 @@ export default async function AdminSeriesPage() {
           </div>
         </div>
       </section>
+
+      <SeriesStorefrontEditor
+        settings={(storefrontSettings ?? null) as any}
+      />
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-[20px] bg-[#edf7f5] p-4">
