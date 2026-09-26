@@ -14,6 +14,15 @@ const cooperStyle = {
     '"Cooper Black", "Cooper Std Black", Georgia, serif',
 };
 
+function money(value: number) {
+  return new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value || 0);
+}
+
 export default async function PacaDetailPage({
   params,
 }: {
@@ -63,6 +72,7 @@ export default async function PacaDetailPage({
       .from("paca_categories")
       .select("id,slug,name,audience,section_id")
       .eq("active", true)
+      .eq("section_id", category.section_id)
       .neq("id", category.id)
       .limit(8),
   ]);
@@ -90,37 +100,15 @@ export default async function PacaDetailPage({
     }
   }
 
-  const suggestionSectionIds = Array.from(
-    new Set(
-      (suggestionCategories ?? [])
-        .map((item) => item.section_id)
-        .filter(Boolean),
-    ),
-  );
-
-  const { data: suggestionSections } =
-    suggestionSectionIds.length > 0
-      ? await supabase
-          .from("paca_sections")
-          .select("id,name")
-          .in("id", suggestionSectionIds)
-      : { data: [] as any[] };
-
-  const suggestionSectionMap = new Map(
-    (suggestionSections ?? []).map((item) => [
-      item.id,
-      item.name,
-    ]),
-  );
-
   const suggestions = (suggestionCategories ?? [])
     .slice(0, 4)
     .map((item) => ({
       ...item,
       sectionName:
-        suggestionSectionMap.get(item.section_id) ??
+        section?.name ??
         item.audience,
-      imageUrl: firstImageByCategory.get(item.id) ?? null,
+      imageUrl:
+        firstImageByCategory.get(item.id) ?? null,
     }));
 
   const whatsapp =
@@ -225,8 +213,32 @@ export default async function PacaDetailPage({
           </div>
         </section>
 
-        <div className="ti-container py-9">
-          <div>
+        <section className="ti-container py-10 sm:py-12">
+          <div className="text-center">
+            <h2
+              className="text-3xl leading-none sm:text-5xl"
+              style={cooperStyle}
+            >
+              Nuestras Referencias
+            </h2>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              {(prices ?? []).map((price) => (
+                <span
+                  key={price.quantity}
+                  className="rounded-full border border-[#eaded3] bg-white px-4 py-2 text-[10px] font-black text-[#4d4540] shadow-sm sm:text-xs"
+                >
+                  {price.quantity} prendas
+                  <span className="mx-1.5 text-[#c9b7aa]">·</span>
+                  <span className="text-[#b63a2c]">
+                    {money(Number(price.price_pen))}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8">
             <PacaGallery
               categoryId={category.id}
               initialMedia={(media ?? []) as any}
@@ -247,10 +259,12 @@ export default async function PacaDetailPage({
             whatsappNumber={whatsapp}
           />
 
-          <PacaCategorySuggestions
-            items={suggestions as any}
-          />
-        </div>
+          {suggestions.length > 0 && (
+            <PacaCategorySuggestions
+              items={suggestions as any}
+            />
+          )}
+        </section>
       </main>
 
       <Footer />

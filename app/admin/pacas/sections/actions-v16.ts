@@ -22,12 +22,9 @@ function csvText(value: FormDataEntryValue | null) {
 
 function cleanColor(value: string) {
   const color = value.trim();
-
-  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
-    return color;
-  }
-
-  return "#b63a2c";
+  return /^#[0-9a-fA-F]{6}$/.test(color)
+    ? color
+    : "#b63a2c";
 }
 
 export async function createPacaSectionV16(formData: FormData) {
@@ -41,16 +38,16 @@ export async function createPacaSectionV16(formData: FormData) {
   );
   const sortOrder = Number(formData.get("sort_order") ?? 0);
   const coverUrl = String(formData.get("cover_url") ?? "").trim();
+  const heroUrl = String(formData.get("hero_url") ?? "").trim();
+  const heroEyebrow = String(formData.get("hero_eyebrow") ?? "").trim();
+  const heroTitle = String(formData.get("hero_title") ?? "").trim();
+  const heroSubtitle = String(formData.get("hero_subtitle") ?? "").trim();
 
   if (!name) {
     throw new Error("Ingresa el nombre de la sección.");
   }
 
   const slug = slugify(name);
-
-  if (!slug) {
-    throw new Error("No se pudo generar el identificador de la sección.");
-  }
 
   const { error } = await supabase
     .from("paca_sections")
@@ -62,14 +59,16 @@ export async function createPacaSectionV16(formData: FormData) {
         preferences.length > 0 ? preferences : [name],
       accent_color: accentColor,
       cover_url: coverUrl || null,
+      hero_url: heroUrl || null,
+      hero_eyebrow: heroEyebrow || null,
+      hero_title: heroTitle || null,
+      hero_subtitle: heroSubtitle || null,
       active: true,
       show_on_home: true,
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
     });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath("/");
   revalidatePath("/pacas");
@@ -88,19 +87,13 @@ export async function updatePacaSectionV16(formData: FormData) {
   );
   const sortOrder = Number(formData.get("sort_order") ?? 0);
   const coverUrl = String(formData.get("cover_url") ?? "").trim();
+  const heroUrl = String(formData.get("hero_url") ?? "").trim();
+  const heroEyebrow = String(formData.get("hero_eyebrow") ?? "").trim();
+  const heroTitle = String(formData.get("hero_title") ?? "").trim();
+  const heroSubtitle = String(formData.get("hero_subtitle") ?? "").trim();
 
   if (!id || !name) {
     throw new Error("Sección inválida.");
-  }
-
-  const { data: current, error: currentError } = await supabase
-    .from("paca_sections")
-    .select("slug")
-    .eq("id", id)
-    .single();
-
-  if (currentError || !current) {
-    throw new Error(currentError?.message ?? "Sección no encontrada.");
   }
 
   const { error } = await supabase
@@ -112,6 +105,10 @@ export async function updatePacaSectionV16(formData: FormData) {
         preferences.length > 0 ? preferences : [name],
       accent_color: accentColor,
       cover_url: coverUrl || null,
+      hero_url: heroUrl || null,
+      hero_eyebrow: heroEyebrow || null,
+      hero_title: heroTitle || null,
+      hero_subtitle: heroSubtitle || null,
       active: formData.get("active") === "on",
       show_on_home: formData.get("show_on_home") === "on",
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
@@ -119,9 +116,7 @@ export async function updatePacaSectionV16(formData: FormData) {
     })
     .eq("id", id);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath("/");
   revalidatePath("/pacas");

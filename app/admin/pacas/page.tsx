@@ -31,6 +31,10 @@ export default async function AdminPacasPage() {
         preference_options,
         accent_color,
         cover_url,
+        hero_url,
+        hero_eyebrow,
+        hero_title,
+        hero_subtitle,
         active,
         show_on_home,
         sort_order
@@ -72,47 +76,19 @@ export default async function AdminPacasPage() {
 
   return (
     <div className="space-y-7">
-      <section className="overflow-hidden rounded-[32px] border border-[#eaded3] bg-white shadow-[0_10px_35px_rgba(100,70,40,0.06)]">
-        <div className="relative px-6 py-7 md:px-8">
-          <div className="pointer-events-none absolute -right-8 top-0 h-36 w-36 rounded-full bg-[#d39218]/10 blur-3xl" />
+      <section className="overflow-hidden rounded-[32px] border border-[#eaded3] bg-white shadow-sm">
+        <div className="px-6 py-7 md:px-8">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5a8b86]">
+            Catálogo
+          </p>
 
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5a8b86]">
-                Catálogo
-              </p>
+          <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#2c2825] md:text-5xl">
+            Pacas
+          </h1>
 
-              <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#2c2825] md:text-5xl">
-                Pacas
-              </h1>
-
-              <p className="mt-3 max-w-xl text-[15px] leading-7 text-[#736860]">
-                Controla las secciones que vende Tendencias Import y las categorías que pertenecen a cada una.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {(sections ?? []).map((section) => {
-                const count = (categories ?? []).filter(
-                  (category) => category.section_id === section.id,
-                ).length;
-
-                return (
-                  <div
-                    key={section.id}
-                    className="min-w-[110px] rounded-[18px] bg-[#f8f4f0] px-4 py-3"
-                  >
-                    <p className="text-[8px] font-black uppercase tracking-[.12em] text-[#7f746c]">
-                      {section.name}
-                    </p>
-                    <p className="mt-1 text-xl font-black">
-                      {count}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <p className="mt-3 max-w-xl text-[15px] leading-7 text-[#736860]">
+            Controla banners, secciones, categorías, precios, fotos y videos.
+          </p>
         </div>
       </section>
 
@@ -124,10 +100,10 @@ export default async function AdminPacasPage() {
         sections={(sections ?? []) as any}
       />
 
-      <details className="group overflow-hidden rounded-[30px] border border-[#eaded3] bg-white shadow-[0_10px_30px_rgba(100,70,40,0.05)]">
+      <details className="group overflow-hidden rounded-[30px] border border-[#eaded3] bg-white shadow-sm">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5">
           <div className="flex items-center gap-4">
-            <span className="grid size-12 place-items-center rounded-full bg-[#b63a2c] text-white shadow-sm">
+            <span className="grid size-12 place-items-center rounded-full bg-[#b63a2c] text-white">
               <Plus size={20} />
             </span>
 
@@ -135,7 +111,6 @@ export default async function AdminPacasPage() {
               <p className="font-black text-[#2c2825]">
                 Crear nueva categoría
               </p>
-
               <p className="mt-1 text-sm text-[#7f746c]">
                 Primero eliges a qué sección pertenece.
               </p>
@@ -155,23 +130,12 @@ export default async function AdminPacasPage() {
             <label className="mb-2 block text-sm font-black">
               Sección
             </label>
-
-            <select
-              name="section_id"
-              className="ti-input"
-              required
-            >
-              <option value="">
-                Selecciona...
-              </option>
-
+            <select name="section_id" className="ti-input" required>
+              <option value="">Selecciona...</option>
               {(sections ?? [])
                 .filter((section) => section.active)
                 .map((section) => (
-                  <option
-                    key={section.id}
-                    value={section.id}
-                  >
+                  <option key={section.id} value={section.id}>
                     {section.name}
                   </option>
                 ))}
@@ -182,7 +146,6 @@ export default async function AdminPacasPage() {
             <label className="mb-2 block text-sm font-black">
               Nombre de la categoría
             </label>
-
             <input
               name="name"
               className="ti-input"
@@ -195,7 +158,6 @@ export default async function AdminPacasPage() {
             <label className="mb-2 block text-sm font-black">
               Rango de tallas
             </label>
-
             <input
               name="size_ranges"
               className="ti-input"
@@ -230,7 +192,6 @@ export default async function AdminPacasPage() {
             <label className="mb-2 block text-sm font-black">
               Descripción
             </label>
-
             <textarea
               name="description"
               className="ti-input min-h-28 py-3"
@@ -248,9 +209,8 @@ export default async function AdminPacasPage() {
                 <p className="font-black text-[#2c2825]">
                   Se organiza automáticamente
                 </p>
-
                 <p className="mt-1 text-sm leading-6 text-[#736860]">
-                  La categoría aparecerá dentro de la sección elegida en el ERP y en la web.
+                  La categoría aparecerá únicamente dentro de la sección elegida.
                 </p>
               </div>
             </div>
@@ -293,26 +253,23 @@ export default async function AdminPacasPage() {
               <Link
                 href={`/admin/pacas/${item.id}`}
                 key={item.id}
-                className="group overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_6px_20px_rgba(100,70,40,0.05)] transition hover:-translate-y-0.5"
+                className="group overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-sm"
               >
                 <div className="relative aspect-square overflow-hidden bg-[#f5e7dc]">
                   {item.cover_url ? (
                     <img
                       src={item.cover_url}
                       alt={item.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="grid h-full place-items-center">
-                      <ImageIcon
-                        size={24}
-                        className="text-[#b63a2c]"
-                      />
+                      <ImageIcon size={24} className="text-[#b63a2c]" />
                     </div>
                   )}
 
                   <span
-                    className="absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[.08em] text-white"
+                    className="absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[9px] font-black uppercase text-white"
                     style={{
                       backgroundColor:
                         section?.accent_color ?? "#b63a2c",
@@ -330,10 +287,6 @@ export default async function AdminPacasPage() {
                   <h3 className="mt-1 text-base font-black">
                     {item.name}
                   </h3>
-
-                  <p className="mt-2 line-clamp-2 text-[10px] leading-4 text-[#7f746c]">
-                    {item.description}
-                  </p>
                 </div>
               </Link>
             );

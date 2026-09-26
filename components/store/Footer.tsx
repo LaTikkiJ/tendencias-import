@@ -22,7 +22,7 @@ export function Footer() {
   return (
     <footer
       id="contacto"
-      className="mt-14 border-t border-white/10 bg-[#292521] text-white"
+      className="mt-12 border-t border-white/15 bg-[#a43327] text-white"
     >
       <div className="ti-container py-7 sm:py-8">
         <div className="mx-auto max-w-3xl text-center">
@@ -30,11 +30,11 @@ export function Footer() {
             Tendencias Import Perú
           </p>
 
-          <p className="mt-1 text-[9px] font-black uppercase tracking-[.24em] text-white/55">
+          <p className="mt-1 text-[9px] font-black uppercase tracking-[.24em] text-white/70">
             Mayorista · Perú
           </p>
 
-          <p className="mx-auto mt-3 max-w-xl text-[11px] leading-5 text-white/60 sm:text-xs">
+          <p className="mx-auto mt-3 max-w-xl text-[11px] leading-5 text-white/75 sm:text-xs">
             Pacas en preventa, Series Kids y atención mayorista.
           </p>
 
@@ -43,7 +43,7 @@ export function Footer() {
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[.04] px-3.5 text-[10px] font-black !text-white"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3.5 text-[10px] font-black !text-white"
             >
               <MessageCircle size={14} />
               WhatsApp
@@ -53,7 +53,7 @@ export function Footer() {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[.04] px-3.5 text-[10px] font-black !text-white"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3.5 text-[10px] font-black !text-white"
             >
               <Instagram size={14} />
               Instagram
@@ -63,25 +63,23 @@ export function Footer() {
               href={TIKTOK_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[.04] px-3.5 text-[10px] font-black !text-white"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3.5 text-[10px] font-black !text-white"
             >
               <Music2 size={14} />
               TikTok
             </a>
           </div>
 
-          <div className="mt-5 flex flex-col items-center justify-center gap-1.5 text-[10px] text-white/55 sm:flex-row sm:gap-4">
-            <p className="font-black text-white/75">
+          <div className="mt-5 flex flex-col items-center justify-center gap-1.5 text-[10px] text-white/75 sm:flex-row sm:gap-4">
+            <p className="font-black text-white">
               TENDENCIAS IMPORT S.A.C.
             </p>
 
-            <span className="hidden text-white/20 sm:inline">•</span>
+            <span className="hidden text-white/30 sm:inline">•</span>
 
-            <p>
-              RUC 20612187003
-            </p>
+            <p>RUC 20612187003</p>
 
-            <span className="hidden text-white/20 sm:inline">•</span>
+            <span className="hidden text-white/30 sm:inline">•</span>
 
             <p className="inline-flex items-center gap-1">
               <MapPin size={11} />
@@ -89,8 +87,8 @@ export function Footer() {
             </p>
           </div>
 
-          <div className="mt-5 border-t border-white/10 pt-4">
-            <p className="text-[9px] text-white/35">
+          <div className="mt-5 border-t border-white/20 pt-4">
+            <p className="text-[9px] text-white/55">
               © Tendencias Import S.A.C. · Todos los derechos reservados
             </p>
           </div>
