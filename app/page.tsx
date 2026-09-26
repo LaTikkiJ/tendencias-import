@@ -2,12 +2,11 @@ import Link from "next/link";
 import {
   ArrowRight,
   Boxes,
-  PackageCheck,
-  Sparkles,
 } from "lucide-react";
 
 import { Footer } from "@/components/store/Footer";
 import { Header } from "@/components/store/Header";
+import PacaHomeHero from "@/components/store/PacaHomeHero";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +15,18 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   const [
+    { data: banners },
     { data: sections },
     { data: categories },
     { data: series },
   ] = await Promise.all([
+    supabase
+      .from("paca_home_banners")
+      .select("id,image_url,title,subtitle,sort_order")
+      .eq("active", true)
+      .order("sort_order")
+      .order("created_at"),
+
     supabase
       .from("paca_sections")
       .select(`
@@ -28,6 +35,7 @@ export default async function HomePage() {
         slug,
         description,
         accent_color,
+        cover_url,
         sort_order
       `)
       .eq("active", true)
@@ -71,270 +79,247 @@ export default async function HomePage() {
       .limit(6),
   ]);
 
-  const homeSections = (sections ?? []).slice(0, 6);
-
   return (
     <>
       <Header />
 
       <main>
-        <section className="ti-container grid items-center gap-8 py-10 lg:min-h-[620px] lg:grid-cols-[1.08fr_.92fr]">
-          <div>
-            <span className="ti-pill">
-              <Sparkles size={15} />
-              MAYORISTA · PERÚ
-            </span>
+        <PacaHomeHero banners={(banners ?? []) as any} />
 
-            <h1 className="ti-home-hero-title mt-6 max-w-3xl">
-              Moda para
-              <span className="block text-[#b63a2c]">
-                hacer crecer
-              </span>
-              tu negocio.
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-[#6f655e]">
-              Explora las líneas de Pacas en preventa o elige Series Kids disponibles desde nuestra tienda.
+        <section className="ti-container py-12 sm:py-16">
+          <div className="text-center">
+            <p className="text-[10px] font-black uppercase tracking-[.24em] text-[#b63a2c]">
+              Tendencias Import
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/pacas"
-                className="ti-button ti-button-primary"
-              >
-                Ver Pacas
-                <ArrowRight size={18} />
-              </Link>
+            <h2 className="mx-auto mt-2 max-w-4xl text-3xl font-black tracking-[-.045em] sm:text-5xl">
+              Todo lo que necesitas para abastecer tu negocio
+            </h2>
 
-              <Link
-                href="/series"
-                className="ti-button ti-button-soft"
-              >
-                Ver Series Kids
-              </Link>
-            </div>
+            <p className="mx-auto mt-3 max-w-xl text-xs leading-6 text-[#7f746c] sm:text-sm">
+              Elige una sección y revisa sus categorías, collages y videos referenciales.
+            </p>
           </div>
 
-          <div className="rounded-[28px] border border-[#eaded3] bg-white p-3 shadow-[0_12px_30px_rgba(67,47,34,.08)] sm:p-5">
-            <div className="grid grid-cols-2 gap-3">
-              {homeSections.map((section) => (
-                <Link
-                  key={section.id}
-                  href="/pacas"
-                  className="flex aspect-square flex-col justify-between rounded-[24px] p-4 text-white shadow-sm transition hover:-translate-y-0.5 sm:p-5"
-                  style={{
-                    backgroundColor:
-                      section.accent_color ?? "#b63a2c",
-                  }}
-                >
-                  <Boxes size={24} />
-
-                  <div>
-                    <p className="text-xl font-black leading-tight sm:text-2xl">
-                      Pacas {section.name}
-                    </p>
-
-                    <p className="mt-2 line-clamp-2 text-[10px] leading-4 text-white/80 sm:text-xs">
-                      {section.description ??
-                        "Explora las categorías disponibles."}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            {(sections ?? []).map((section) => (
               <Link
-                href="/series"
-                className="flex aspect-square flex-col justify-between rounded-[24px] bg-[#5a8b86] p-4 text-white shadow-sm transition hover:-translate-y-0.5 sm:p-5"
+                key={section.id}
+                href={`/pacas?section=${section.slug}`}
+                className="group relative overflow-hidden rounded-[24px] bg-[#eee5dc] shadow-[0_12px_30px_rgba(75,50,40,.09)]"
               >
-                <PackageCheck size={24} />
+                <div className="aspect-[4/3] sm:aspect-[16/10]">
+                  {section.cover_url ? (
+                    <img
+                      src={section.cover_url}
+                      alt={`Pacas ${section.name}`}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <div
+                      className="grid h-full place-items-center"
+                      style={{
+                        backgroundColor:
+                          section.accent_color ?? "#b63a2c",
+                      }}
+                    >
+                      <Boxes size={34} className="text-white/85" />
+                    </div>
+                  )}
+                </div>
 
-                <div>
-                  <p className="text-xl font-black leading-tight sm:text-2xl">
-                    Series Kids
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
 
-                  <p className="mt-2 text-[10px] leading-4 text-white/80 sm:text-xs">
-                    Stock real por código.
-                  </p>
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-5">
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-[.14em] text-white/70">
+                      Pacas
+                    </p>
+
+                    <h3 className="mt-1 text-xl font-black sm:text-3xl">
+                      {section.name}
+                    </h3>
+                  </div>
+
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white !text-[#9b382b] shadow">
+                    <ArrowRight size={15} />
+                  </span>
                 </div>
               </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="border-y border-[#efe4da] bg-white/55 py-12 sm:py-16">
+          <div className="ti-container">
+            <div className="text-center">
+              <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#5a8b86]">
+                Explora por categoría
+              </p>
+
+              <h2 className="mx-auto mt-2 max-w-3xl text-3xl font-black tracking-[-.04em] sm:text-5xl">
+                Referencias para elegir mejor
+              </h2>
+            </div>
+
+            <div className="mt-8 space-y-10">
+              {(sections ?? []).map((section) => {
+                const items = (categories ?? [])
+                  .filter(
+                    (category) =>
+                      category.section_id === section.id,
+                  )
+                  .slice(0, 6);
+
+                if (items.length === 0) return null;
+
+                return (
+                  <div key={section.id}>
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h3 className="text-xl font-black sm:text-2xl">
+                        {section.name}
+                      </h3>
+
+                      <Link
+                        href={`/pacas?section=${section.slug}`}
+                        className="text-[10px] font-black text-[#9b382b] sm:text-xs"
+                      >
+                        Ver sección →
+                      </Link>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5">
+                      {items.map((category) => (
+                        <Link
+                          key={category.id}
+                          href={`/pacas/${category.slug}`}
+                          className="group overflow-hidden rounded-[20px] bg-white shadow-[0_8px_24px_rgba(65,45,35,.07)]"
+                        >
+                          <div className="aspect-square overflow-hidden bg-[#eee4da]">
+                            {category.cover_url ? (
+                              <img
+                                src={category.cover_url}
+                                alt={category.name}
+                                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                              />
+                            ) : (
+                              <div
+                                className="grid h-full place-items-center"
+                                style={{
+                                  backgroundColor:
+                                    section.accent_color ?? "#b63a2c",
+                                }}
+                              >
+                                <Boxes size={28} className="text-white/80" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="p-3.5 sm:p-4">
+                            <p
+                              className="text-[8px] font-black uppercase tracking-[.12em]"
+                              style={{
+                                color:
+                                  section.accent_color ?? "#b63a2c",
+                              }}
+                            >
+                              {section.name}
+                            </p>
+
+                            <h4 className="mt-1 text-[16px] font-black leading-tight sm:text-xl">
+                              {category.name}
+                            </h4>
+
+                            <span className="mt-3 inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[.08em] text-[#9b382b]">
+                              Ver referencias
+                              <ArrowRight size={12} />
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        <section className="ti-container py-12 sm:py-14">
+        <section className="ti-container py-12 sm:py-16">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <span className="ti-pill">
-                PACAS
-              </span>
+              <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#c78316]">
+                Series Kids
+              </p>
 
-              <h2 className="ti-brand-section-title mt-4">
-                Elige lo que quieres vender
+              <h2 className="mt-2 text-3xl font-black tracking-[-.04em] sm:text-5xl">
+                Series disponibles
               </h2>
             </div>
 
             <Link
-              href="/pacas"
-              className="hidden font-extrabold text-[#b63a2c] sm:block"
+              href="/series"
+              className="hidden text-xs font-black text-[#9b382b] sm:block"
             >
-              Ver todo →
+              Ver todas →
             </Link>
           </div>
 
-          <div className="mt-7 space-y-8">
-            {homeSections.map((section) => {
-              const items = (categories ?? [])
-                .filter(
-                  (category) =>
-                    category.section_id === section.id,
-                )
-                .slice(0, 4);
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            {(series ?? []).map((item) => {
+              const stock = Number(
+                item.stock_series_available ?? 0,
+              );
 
-              if (items.length === 0) {
-                return null;
-              }
+              const preorder = Number(
+                item.preorder_series_available ?? 0,
+              );
+
+              const price =
+                stock > 0
+                  ? Number(item.price_stock ?? 0)
+                  : Number(item.price_preorder ?? 0);
 
               return (
-                <div key={section.id}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-lg font-black">
-                      {section.name}
-                    </h3>
-
-                    <Link
-                      href="/pacas"
-                      className="text-[10px] font-black text-[#9b382b]"
-                    >
-                      Ver sección →
-                    </Link>
+                <Link
+                  key={item.id}
+                  href={`/series/${item.slug}`}
+                  className="group overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_8px_24px_rgba(65,45,35,.06)]"
+                >
+                  <div className="aspect-square overflow-hidden bg-[#eee5dc]">
+                    {item.cover_url && (
+                      <img
+                        src={item.cover_url}
+                        alt={item.name}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                      />
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-                    {items.map((category) => (
-                      <Link
-                        href={`/pacas/${category.slug}`}
-                        key={category.id}
-                        className="group overflow-hidden rounded-[22px] border border-[#eaded3] bg-white shadow-[0_8px_22px_rgba(67,47,34,.07)] transition hover:-translate-y-1"
-                      >
-                        <div
-                          className="aspect-square bg-[#f0e6dc] bg-cover bg-center"
-                          style={
-                            category.cover_url
-                              ? {
-                                  backgroundImage: `url(${category.cover_url})`,
-                                }
-                              : {}
-                          }
-                        />
+                  <div className="p-3.5 sm:p-4">
+                    <p className="text-[8px] font-black uppercase tracking-[.12em] text-[#5a8b86]">
+                      {item.code}
+                    </p>
 
-                        <div className="p-3.5 sm:p-5">
-                          <span
-                            className="text-[9px] font-black uppercase tracking-[.16em] sm:text-xs"
-                            style={{
-                              color:
-                                section.accent_color ?? "#5a8b86",
-                            }}
-                          >
-                            {section.name}
-                          </span>
+                    <p className="mt-1 text-sm font-black sm:text-lg">
+                      {item.name}
+                    </p>
 
-                          <h4 className="mt-2 text-[17px] font-black leading-tight sm:text-2xl">
-                            {category.name}
-                          </h4>
+                    <div className="mt-3 flex items-end justify-between gap-2">
+                      <p className="text-sm font-black text-[#b63a2c] sm:text-base">
+                        S/ {price.toFixed(2)}
+                      </p>
 
-                          <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black text-[#9b382b] sm:text-sm">
-                            Ver categoría
-                            <ArrowRight size={14} />
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
+                      <span className="text-[8px] font-black text-[#7f746c]">
+                        {stock > 0
+                          ? `${stock} stock`
+                          : `${preorder} preventa`}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
-          </div>
-        </section>
-
-        <section className="bg-white/50 py-8 sm:py-10">
-          <div className="ti-container">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <span className="ti-pill">
-                  STOCK REAL
-                </span>
-
-                <h2 className="ti-brand-section-title mt-4">
-                  Series Kids disponibles
-                </h2>
-              </div>
-
-              <Link
-                href="/series"
-                className="hidden font-extrabold text-[#b63a2c] sm:block"
-              >
-                Ver Series →
-              </Link>
-            </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
-              {(series ?? []).map((item) => {
-                const stock = Number(
-                  item.stock_series_available ?? 0,
-                );
-
-                const preorder = Number(
-                  item.preorder_series_available ?? 0,
-                );
-
-                const price =
-                  stock > 0
-                    ? Number(item.price_stock ?? 0)
-                    : Number(item.price_preorder ?? 0);
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/series/${item.slug}`}
-                    className="ti-card overflow-hidden"
-                  >
-                    <div
-                      className="aspect-square bg-[#f1e8df] bg-cover bg-center"
-                      style={
-                        item.cover_url
-                          ? {
-                              backgroundImage: `url(${item.cover_url})`,
-                            }
-                          : {}
-                      }
-                    />
-
-                    <div className="p-4">
-                      <p className="text-[10px] font-black tracking-[.14em] text-[#5a8b86]">
-                        {item.code}
-                      </p>
-
-                      <p className="mt-1 font-black">
-                        {item.name}
-                      </p>
-
-                      <div className="mt-3 flex items-end justify-between gap-2">
-                        <p className="text-base font-black text-[#b63a2c]">
-                          S/ {price.toFixed(2)}
-                        </p>
-
-                        <span className="text-[9px] font-black text-[#7f746c]">
-                          {stock > 0
-                            ? `${stock} stock`
-                            : `${preorder} preventa`}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
           </div>
         </section>
       </main>

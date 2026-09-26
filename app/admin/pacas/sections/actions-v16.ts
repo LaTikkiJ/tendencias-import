@@ -40,6 +40,7 @@ export async function createPacaSectionV16(formData: FormData) {
     String(formData.get("accent_color") ?? "#b63a2c"),
   );
   const sortOrder = Number(formData.get("sort_order") ?? 0);
+  const coverUrl = String(formData.get("cover_url") ?? "").trim();
 
   if (!name) {
     throw new Error("Ingresa el nombre de la sección.");
@@ -60,6 +61,7 @@ export async function createPacaSectionV16(formData: FormData) {
       preference_options:
         preferences.length > 0 ? preferences : [name],
       accent_color: accentColor,
+      cover_url: coverUrl || null,
       active: true,
       show_on_home: true,
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
@@ -85,6 +87,7 @@ export async function updatePacaSectionV16(formData: FormData) {
     String(formData.get("accent_color") ?? "#b63a2c"),
   );
   const sortOrder = Number(formData.get("sort_order") ?? 0);
+  const coverUrl = String(formData.get("cover_url") ?? "").trim();
 
   if (!id || !name) {
     throw new Error("Sección inválida.");
@@ -108,6 +111,7 @@ export async function updatePacaSectionV16(formData: FormData) {
       preference_options:
         preferences.length > 0 ? preferences : [name],
       accent_color: accentColor,
+      cover_url: coverUrl || null,
       active: formData.get("active") === "on",
       show_on_home: formData.get("show_on_home") === "on",
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,

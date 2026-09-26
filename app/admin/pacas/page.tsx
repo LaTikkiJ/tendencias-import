@@ -8,6 +8,7 @@ import {
 
 import { createPacaCategory } from "@/app/admin/actions";
 import PacaSectionsManager from "@/components/admin/PacaSectionsManager";
+import PacaHomeBannerManager from "@/components/admin/PacaHomeBannerManager";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export default async function AdminPacasPage() {
   const [
     { data: sections },
     { data: categories },
+    { data: banners },
   ] = await Promise.all([
     supabase
       .from("paca_sections")
@@ -28,6 +30,7 @@ export default async function AdminPacasPage() {
         description,
         preference_options,
         accent_color,
+        cover_url,
         active,
         show_on_home,
         sort_order
@@ -52,6 +55,12 @@ export default async function AdminPacasPage() {
       `)
       .order("sort_order")
       .order("created_at", { ascending: false }),
+
+    supabase
+      .from("paca_home_banners")
+      .select("id,image_url,title,subtitle,sort_order,active")
+      .order("sort_order")
+      .order("created_at"),
   ]);
 
   const sectionMap = new Map(
@@ -106,6 +115,10 @@ export default async function AdminPacasPage() {
           </div>
         </div>
       </section>
+
+      <PacaHomeBannerManager
+        banners={(banners ?? []) as any}
+      />
 
       <PacaSectionsManager
         sections={(sections ?? []) as any}
