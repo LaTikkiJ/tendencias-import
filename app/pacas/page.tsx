@@ -156,56 +156,48 @@ export default async function PacasPage({
       <Header />
 
       <main>
-        <section className="ti-container pt-6 sm:pt-8">
-          <div className="overflow-hidden rounded-[30px] border border-[#eaded3] bg-[#fffaf6] shadow-[0_14px_38px_rgba(70,45,35,.07)]">
-            <div className="grid lg:grid-cols-[.9fr_1.1fr]">
-              <div className="flex items-center p-6 sm:p-9 lg:p-12">
-                <div>
-                  <p
-                    className="text-[9px] font-black uppercase tracking-[.22em]"
-                    style={{
-                      color:
-                        selected.accent_color ?? "#b63a2c",
-                    }}
-                  >
-                    {selected.hero_eyebrow ||
-                      `Tendencias · Pacas ${selected.name}`}
-                  </p>
+        <section className="relative overflow-hidden border-b border-[#eaded3] bg-[#fffaf6]">
+          <div className="absolute inset-0">
+            {heroImage ? (
+              <img
+                src={heroImage}
+                alt={`Pacas ${selected.name}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className="h-full w-full"
+                style={{
+                  backgroundColor:
+                    selected.accent_color ?? "#b63a2c",
+                }}
+              />
+            )}
+          </div>
 
-                  <h1
-                    className="mt-3 text-4xl leading-[.92] sm:text-6xl"
-                    style={cooperStyle}
-                  >
-                    {selected.hero_title ||
-                      `Pacas ${selected.name}`}
-                  </h1>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#231814]/72 via-[#231814]/32 to-transparent" />
 
-                  <p className="mt-4 max-w-xl text-sm leading-7 text-[#746a63]">
-                    {selected.hero_subtitle ||
-                      selected.description ||
-                      "Revisa nuestras categorías y referencias."}
-                  </p>
-                </div>
-              </div>
+          <div className="relative z-10">
+            <div className="ti-container flex min-h-[320px] items-end py-10 sm:min-h-[420px] sm:py-14">
+              <div className="max-w-3xl">
+                <p className="text-[9px] font-black uppercase tracking-[.22em] text-[#ffd47b]">
+                  {selected.hero_eyebrow ||
+                    `Tendencias · Pacas ${selected.name}`}
+                </p>
 
-              <div className="min-h-[260px] bg-[#eee4da] sm:min-h-[360px]">
-                {heroImage ? (
-                  <img
-                    src={heroImage}
-                    alt={`Pacas ${selected.name}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="grid h-full min-h-[260px] place-items-center"
-                    style={{
-                      backgroundColor:
-                        selected.accent_color ?? "#b63a2c",
-                    }}
-                  >
-                    <Boxes size={44} className="text-white/80" />
-                  </div>
-                )}
+                <h1
+                  className="mt-3 text-4xl leading-[.92] text-white sm:text-6xl"
+                  style={cooperStyle}
+                >
+                  {selected.hero_title ||
+                    `Pacas ${selected.name}`}
+                </h1>
+
+                <p className="mt-4 max-w-xl text-sm leading-7 text-white/82">
+                  {selected.hero_subtitle ||
+                    selected.description ||
+                    "Revisa nuestras categorías y referencias."}
+                </p>
               </div>
             </div>
           </div>

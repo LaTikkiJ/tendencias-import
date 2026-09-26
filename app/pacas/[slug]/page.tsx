@@ -124,31 +124,25 @@ export default async function PacaDetailPage({
       <Header />
 
       <main>
-        <section className="ti-container pt-5">
-          <div
-            className={`relative overflow-hidden rounded-[28px] ${
-              heroUrl
-                ? "min-h-[330px] sm:min-h-[420px]"
-                : "bg-[#fff5ec]"
-            }`}
-          >
-            {heroUrl && (
-              <img
-                src={heroUrl}
-                alt={category.name}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            )}
-
-            <div
-              className={`absolute inset-0 ${
-                heroUrl
-                  ? "bg-gradient-to-r from-[#231814]/72 via-[#231814]/28 to-transparent"
-                  : "bg-[linear-gradient(135deg,#fff3e8,#f8eee5)]"
-              }`}
+        <section className="relative overflow-hidden border-b border-[#eaded3] bg-[#fff5ec]">
+          {heroUrl && (
+            <img
+              src={heroUrl}
+              alt={category.name}
+              className="absolute inset-0 h-full w-full object-cover"
             />
+          )}
 
-            <div className="relative z-10 flex min-h-[330px] items-end p-6 sm:min-h-[420px] sm:p-10">
+          <div
+            className={`absolute inset-0 ${
+              heroUrl
+                ? "bg-gradient-to-r from-[#231814]/72 via-[#231814]/28 to-transparent"
+                : "bg-[linear-gradient(135deg,#fff3e8,#f8eee5)]"
+            }`}
+          />
+
+          <div className="relative z-10">
+            <div className="ti-container flex min-h-[330px] items-end py-10 sm:min-h-[420px] sm:py-14">
               <div className="max-w-3xl">
                 <p
                   className={`text-[10px] font-black uppercase tracking-[.2em] ${
