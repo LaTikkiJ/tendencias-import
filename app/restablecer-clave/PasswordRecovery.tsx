@@ -43,7 +43,12 @@ export default function PasswordRecovery() {
 
   async function requestReset(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setBusy(true); setMessage("");
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { emailRedirectTo: `${window.location.origin}/restablecer-clave` });
+    const { error } = await supabase.auth.resetPasswordForEmail(
+  email.trim(),
+  {
+    redirectTo: `${window.location.origin}/restablecer-clave`,
+  }
+);
     setMessage(error ? "No se pudo enviar el correo. Comprueba el correo e inténtalo de nuevo." : "Si el correo está registrado, recibirás un enlace para crear una nueva contraseña. Revisa también spam.");
     setBusy(false);
   }
